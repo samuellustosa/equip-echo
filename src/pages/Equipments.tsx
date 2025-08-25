@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Wrench, History } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Wrench, History, Edit } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,57 +19,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Mock data para demonstração
-const equipments = [
-  {
-    id: 1,
-    name: "Impressora HP LaserJet Pro",
-    model: "M404dn",
-    sector: "Administração", 
-    responsible: "Maria Silva",
-    status: "Em Dia",
-    lastMaintenance: "2024-08-20",
-    nextMaintenance: "2024-09-20",
-    maintenanceInterval: 30
-  },
-  {
-    id: 2,
-    name: "Notebook Dell Inspiron",
-    model: "15 3000",
-    sector: "TI",
-    responsible: "João Santos",
-    status: "Com Aviso", 
-    lastMaintenance: "2024-08-15",
-    nextMaintenance: "2024-08-25",
-    maintenanceInterval: 10
-  },
-  {
-    id: 3,
-    name: "Projetor Epson",
-    model: "PowerLite X41+",
-    sector: "Sala de Reunião",
-    responsible: "Ana Costa",
-    status: "Atrasado",
-    lastMaintenance: "2024-07-30", 
-    nextMaintenance: "2024-08-15",
-    maintenanceInterval: 15
-  },
-  {
-    id: 4,
-    name: "Scanner Canon",
-    model: "CanoScan LiDE 400",
-    sector: "Recepção",
-    responsible: "Carlos Lima",
-    status: "Em Dia",
-    lastMaintenance: "2024-08-18",
-    nextMaintenance: "2024-09-18",
-    maintenanceInterval: 30
-  }
-];
+import { useEquipments } from "@/hooks/useEquipments";
+import { AddEquipmentDialog } from "@/components/equipments/add-equipment-dialog";
+import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 
 export default function Equipments() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  
+  const { equipments, addEquipment, registerMaintenance } = useEquipments();
 
   const filteredEquipments = equipments.filter(equipment =>
     equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,7 +57,10 @@ export default function Equipments() {
           <h1 className="text-3xl font-bold">Equipamentos</h1>
           <p className="text-muted-foreground">Gerenciar equipamentos e suas manutenções</p>
         </div>
-        <Button className="bg-gradient-primary hover:shadow-elegant transition-all">
+        <Button 
+          className="bg-gradient-primary hover:shadow-elegant transition-all"
+          onClick={() => setShowAddDialog(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Equipamento
         </Button>
@@ -170,7 +133,12 @@ export default function Equipments() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-popover border z-50">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedEquipment(equipment);
+                              setShowMaintenanceDialog(true);
+                            }}
+                          >
                             <Wrench className="h-4 w-4 mr-2" />
                             Registrar Manutenção
                           </DropdownMenuItem>
@@ -179,6 +147,7 @@ export default function Equipments() {
                             Ver Histórico
                           </DropdownMenuItem>
                           <DropdownMenuItem>
+                            <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -191,6 +160,19 @@ export default function Equipments() {
           </div>
         </CardContent>
       </Card>
+
+      <AddEquipmentDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={addEquipment}
+      />
+
+      <MaintenanceDialog
+        open={showMaintenanceDialog}
+        onOpenChange={setShowMaintenanceDialog}
+        equipment={selectedEquipment}
+        onSubmit={registerMaintenance}
+      />
     </div>
   );
 }
