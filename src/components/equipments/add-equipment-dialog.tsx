@@ -17,12 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Equipment } from "@/hooks/useEquipments";
+import { NewEquipment } from "@/hooks/useEquipments";
 
 interface AddEquipmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (equipment: Omit<Equipment, "id">) => void;
+  onSubmit: (equipment: NewEquipment) => void;
 }
 
 export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmentDialogProps) {
@@ -31,7 +31,7 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
     model: "",
     sector: "",
     responsible: "",
-    maintenanceInterval: 30
+    maintenance_interval: 30
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -39,13 +39,13 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
     
     const today = new Date();
     const nextMaintenance = new Date();
-    nextMaintenance.setDate(today.getDate() + formData.maintenanceInterval);
+    nextMaintenance.setDate(today.getDate() + formData.maintenance_interval);
 
-    const newEquipment = {
+    const newEquipment: NewEquipment = {
       ...formData,
-      status: "Em Dia" as const,
-      lastMaintenance: today.toISOString().split('T')[0],
-      nextMaintenance: nextMaintenance.toISOString().split('T')[0]
+      status: "Em Dia",
+      last_maintenance: today.toISOString().split('T')[0],
+      next_maintenance: nextMaintenance.toISOString().split('T')[0]
     };
 
     onSubmit(newEquipment);
@@ -54,7 +54,7 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
       model: "",
       sector: "",
       responsible: "",
-      maintenanceInterval: 30
+      maintenance_interval: 30
     });
     onOpenChange(false);
   };
@@ -125,8 +125,8 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
             <Input
               id="interval"
               type="number"
-              value={formData.maintenanceInterval}
-              onChange={(e) => setFormData(prev => ({ ...prev, maintenanceInterval: parseInt(e.target.value) }))}
+              value={formData.maintenance_interval}
+              onChange={(e) => setFormData(prev => ({ ...prev, maintenance_interval: parseInt(e.target.value) }))}
               placeholder="30"
               min="1"
               required

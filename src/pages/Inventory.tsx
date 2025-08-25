@@ -19,73 +19,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Mock data para demonstração
-const inventoryItems = [
-  {
-    id: 1,
-    name: "Toner HP 85A",
-    category: "TONERS",
-    quantity: 2,
-    minimum: 5,
-    unit: "unidade",
-    location: "Almoxarifado A",
-    status: "ATIVO",
-    lastMovement: "2024-08-15"
-  },
-  {
-    id: 2,
-    name: "Cabo HDMI 2m",
-    category: "CABOS",
-    quantity: 1,
-    minimum: 3,
-    unit: "unidade",
-    location: "Almoxarifado B",
-    status: "ATIVO",
-    lastMovement: "2024-08-10"
-  },
-  {
-    id: 3,
-    name: "Mouse Óptico",
-    category: "PERIFÉRICOS",
-    quantity: 0,
-    minimum: 2,
-    unit: "unidade",
-    location: "Almoxarifado A",
-    status: "ATIVO",
-    lastMovement: "2024-08-05"
-  },
-  {
-    id: 4,
-    name: "Gabinete ATX",
-    category: "GABINETES",
-    quantity: 5,
-    minimum: 2,
-    unit: "unidade",
-    location: "Almoxarifado C",
-    status: "ATIVO",
-    lastMovement: "2024-08-20"
-  },
-  {
-    id: 5,
-    name: "Fonte 500W",
-    category: "FONTES",
-    quantity: 1,
-    minimum: 3,
-    unit: "unidade",
-    location: "Almoxarifado C",
-    status: "EM MANUTENÇÃO",
-    lastMovement: "2024-08-12"
-  }
-];
+import { useInventory } from "@/hooks/useInventory";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { inventoryItems, isLoading } = useInventory();
 
   const filteredItems = inventoryItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (item.location || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStockStatus = (quantity: number, minimum: number) => {
@@ -186,61 +129,67 @@ export default function Inventory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map((item) => {
-                  const stockStatus = getStockStatus(item.quantity, item.minimum);
-                  return (
-                    <TableRow key={item.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Min: {item.minimum} {item.unit}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{item.category}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.quantity}</span>
-                          <StatusBadge status={stockStatus.status}>
-                            {stockStatus.label}
-                          </StatusBadge>
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.location}</TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
-                      <TableCell className="text-sm">{item.lastMovement}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover border z-50">
-                            <DropdownMenuItem>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Entrada
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Package className="h-4 w-4 mr-2" />
-                              Saída
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <History className="h-4 w-4 mr-2" />
-                              Histórico
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              Editar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">Carregando...</TableCell>
+                  </TableRow>
+                ) : (
+                  filteredItems.map((item) => {
+                    const stockStatus = getStockStatus(item.quantity, item.minimum);
+                    return (
+                      <TableRow key={item.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Min: {item.minimum} {item.unit}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.category}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{item.quantity}</span>
+                            <StatusBadge status={stockStatus.status}>
+                              {stockStatus.label}
+                            </StatusBadge>
+                          </div>
+                        </TableCell>
+                        <TableCell>{item.location}</TableCell>
+                        <TableCell>{getStatusBadge(item.status)}</TableCell>
+                        <TableCell className="text-sm">{item.last_movement}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover border z-50">
+                              <DropdownMenuItem>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Entrada
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Package className="h-4 w-4 mr-2" />
+                                Saída
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <History className="h-4 w-4 mr-2" />
+                                Histórico
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Editar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>

@@ -18,13 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Equipment } from "@/hooks/useEquipments";
+import { Equipment, NewMaintenanceRecord } from "@/hooks/useEquipments";
 
 interface MaintenanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment: Equipment | null;
-  onSubmit: (equipmentId: number, data: { date: string; responsible: string; description: string; type: "Preventiva" | "Corretiva" }) => void;
+  onSubmit: (equipmentId: number, data: Omit<NewMaintenanceRecord, "equipment_id">) => void;
 }
 
 export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: MaintenanceDialogProps) {
@@ -32,7 +32,7 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
     date: new Date().toISOString().split('T')[0],
     responsible: "",
     description: "",
-    type: "Preventiva" as "Preventiva" | "Corretiva"
+    type: "Preventiva"
   });
 
   const handleSubmit = (e: React.FormEvent) => {

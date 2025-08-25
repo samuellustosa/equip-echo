@@ -1,139 +1,184 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Package, Wrench, AlertTriangle, CheckCircle } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Wrench, History, Edit } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useEquipments } from "@/hooks/useEquipments";
+import { AddEquipmentDialog } from "@/components/equipments/add-equipment-dialog";
+import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 
-const stats = [
-  {
-    title: "Total de Equipamentos",
-    value: "24",
-    description: "3 precisam de manutenção",
-    icon: Wrench,
-    status: "neutral" as const
-  },
-  {
-    title: "Itens em Estoque",
-    value: "156",
-    description: "8 com estoque baixo",
-    icon: Package,
-    status: "warning" as const
-  },
-  {
-    title: "Equipamentos em Dia",
-    value: "21",
-    description: "87.5% em funcionamento",
-    icon: CheckCircle,
-    status: "success" as const
-  },
-  {
-    title: "Alertas Ativos",
-    value: "5",
-    description: "Requer atenção imediata",
-    icon: AlertTriangle,
-    status: "danger" as const
-  }
-];
+export default function Equipments() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  
+  const { equipments, addEquipment, registerMaintenance, isLoading } = useEquipments();
 
-const recentEquipments = [
-  { name: "Impressora HP LaserJet", sector: "Administração", status: "Em Dia", lastMaintenance: "2024-08-20" },
-  { name: "Notebook Dell Inspiron", sector: "TI", status: "Com Aviso", lastMaintenance: "2024-08-15" },
-  { name: "Projetor Epson", sector: "Sala de Reunião", status: "Atrasado", lastMaintenance: "2024-07-30" },
-];
+  const filteredEquipments = equipments.filter(equipment =>
+    equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipment.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipment.responsible.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-const lowStockItems = [
-  { name: "Toner HP 85A", quantity: 2, minimum: 5, category: "TONERS" },
-  { name: "Cabo HDMI 2m", quantity: 1, minimum: 3, category: "CABOS" },
-  { name: "Mouse Óptico", quantity: 0, minimum: 2, category: "PERIFÉRICOS" },
-];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Em Dia":
+        return <StatusBadge status="success">{status}</StatusBadge>;
+      case "Com Aviso":
+        return <StatusBadge status="warning">{status}</StatusBadge>;
+      case "Atrasado":
+        return <StatusBadge status="danger">{status}</StatusBadge>;
+      default:
+        return <StatusBadge status="neutral">{status}</StatusBadge>;
+    }
+  };
 
-export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do gerenciamento de recursos</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Equipamentos</h1>
+          <p className="text-muted-foreground">Gerenciar equipamentos e suas manutenções</p>
+        </div>
+        <Button 
+          className="bg-gradient-primary hover:shadow-elegant transition-all"
+          onClick={() => setShowAddDialog(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Equipamento
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.title} className="shadow-card hover:shadow-elegant transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                  <Icon className="h-4 w-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.description}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Equipment Maintenance */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>Equipamentos Recentes</CardTitle>
-            <CardDescription>Últimas manutenções realizadas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentEquipments.map((equipment) => (
-                <div key={equipment.name} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{equipment.name}</p>
-                    <p className="text-xs text-muted-foreground">{equipment.sector}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <StatusBadge 
-                      status={
-                        equipment.status === "Em Dia" ? "success" : 
-                        equipment.status === "Com Aviso" ? "warning" : "danger"
-                      }
-                    >
-                      {equipment.status}
-                    </StatusBadge>
-                    <p className="text-xs text-muted-foreground">{equipment.lastMaintenance}</p>
-                  </div>
-                </div>
-              ))}
+      {/* Filters */}
+      <Card className="shadow-card">
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar equipamentos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <Button variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Low Stock Items */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>Estoque Baixo</CardTitle>
-            <CardDescription>Itens que precisam de reposição</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {lowStockItems.map((item) => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.category}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <StatusBadge status={item.quantity === 0 ? "danger" : "warning"}>
-                      {item.quantity}/{item.minimum}
-                    </StatusBadge>
-                    <p className="text-xs text-muted-foreground">
-                      {item.quantity === 0 ? "Sem estoque" : "Baixo"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Equipment Table */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle>Lista de Equipamentos</CardTitle>
+          <CardDescription>
+            {filteredEquipments.length} equipamento(s) encontrado(s)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Equipamento</TableHead>
+                  <TableHead>Setor</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Última Manutenção</TableHead>
+                  <TableHead>Próxima Manutenção</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">Carregando...</TableCell>
+                  </TableRow>
+                ) : (
+                  filteredEquipments.map((equipment) => (
+                    <TableRow key={equipment.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{equipment.name}</p>
+                          <p className="text-sm text-muted-foreground">{equipment.model}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{equipment.sector}</Badge>
+                      </TableCell>
+                      <TableCell>{equipment.responsible}</TableCell>
+                      <TableCell>{getStatusBadge(equipment.status)}</TableCell>
+                      <TableCell className="text-sm">{equipment.last_maintenance}</TableCell>
+                      <TableCell className="text-sm">{equipment.next_maintenance}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover border z-50">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedEquipment(equipment);
+                                setShowMaintenanceDialog(true);
+                              }}
+                            >
+                              <Wrench className="h-4 w-4 mr-2" />
+                              Registrar Manutenção
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <History className="h-4 w-4 mr-2" />
+                              Ver Histórico
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AddEquipmentDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={addEquipment}
+      />
+
+      <MaintenanceDialog
+        open={showMaintenanceDialog}
+        onOpenChange={setShowMaintenanceDialog}
+        equipment={selectedEquipment}
+        onSubmit={registerMaintenance}
+      />
     </div>
   );
 }

@@ -1,118 +1,108 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
-export interface Equipment {
-  id: number;
-  name: string;
-  model: string;
-  sector: string;
-  responsible: string;
-  status: "Em Dia" | "Com Aviso" | "Atrasado";
-  lastMaintenance: string;
-  nextMaintenance: string;
-  maintenanceInterval: number;
-}
+// Tipos para a tabela 'equipments'
+export type Equipment = Database['public']['Tables']['equipments']['Row'];
+export type NewEquipment = Database['public']['Tables']['equipments']['Insert'];
+export type UpdatedEquipment = Database['public']['Tables']['equipments']['Update'];
 
-export interface MaintenanceRecord {
-  id: number;
-  equipmentId: number;
-  date: string;
-  responsible: string;
-  description: string;
-  type: "Preventiva" | "Corretiva";
-}
-
-// Mock data inicial
-const initialEquipments: Equipment[] = [
-  {
-    id: 1,
-    name: "Impressora HP LaserJet Pro",
-    model: "M404dn",
-    sector: "Administração",
-    responsible: "Maria Silva",
-    status: "Em Dia",
-    lastMaintenance: "2024-08-20",
-    nextMaintenance: "2024-09-20",
-    maintenanceInterval: 30
-  },
-  {
-    id: 2,
-    name: "Notebook Dell Inspiron",
-    model: "15 3000",
-    sector: "TI",
-    responsible: "João Santos",
-    status: "Com Aviso",
-    lastMaintenance: "2024-08-15",
-    nextMaintenance: "2024-08-25",
-    maintenanceInterval: 10
-  },
-  {
-    id: 3,
-    name: "Projetor Epson",
-    model: "PowerLite X41+",
-    sector: "Sala de Reunião",
-    responsible: "Ana Costa",
-    status: "Atrasado",
-    lastMaintenance: "2024-07-30",
-    nextMaintenance: "2024-08-15",
-    maintenanceInterval: 15
-  },
-  {
-    id: 4,
-    name: "Scanner Canon",
-    model: "CanoScan LiDE 400",
-    sector: "Recepção",
-    responsible: "Carlos Lima",
-    status: "Em Dia",
-    lastMaintenance: "2024-08-18",
-    nextMaintenance: "2024-09-18",
-    maintenanceInterval: 30
-  }
-];
+// Tipos para a tabela 'maintenance_records'
+export type MaintenanceRecord = Database['public']['Tables']['maintenance_records']['Row'];
+export type NewMaintenanceRecord = Database['public']['Tables']['maintenance_records']['Insert'];
 
 export function useEquipments() {
-  const [equipments, setEquipments] = useState<Equipment[]>(initialEquipments);
-  const [isLoading, setIsLoading] = useState(false);
+  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const addEquipment = (equipment: Omit<Equipment, "id">) => {
-    const newEquipment = {
-      ...equipment,
-      id: Math.max(...equipments.map(e => e.id)) + 1
+  const fetchEquipments = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("equipments")
+      .select("*")
+      .order("id");
+
+    if (error) {
+      toast.error("Erro ao buscar equipamentos.");
+      console.error(error);
+    } else {
+      setEquipments(data);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEquipments();
+  }, []);
+
+  const addEquipment = async (equipment: NewEquipment) => {
+    const { error } = await supabase.from("equipments").insert(equipment);
+    if (error) {
+      toast.error("Erro ao adicionar equipamento.");
+      console.error(error);
+    } else {
+      toast.success("Equipamento adicionado com sucesso!");
+      fetchEquipments();
+    }
+  };
+
+  const updateEquipment = async (id: number, updates: UpdatedEquipment) => {
+    const { error } = await supabase.from("equipments").update(updates).eq("id", id);
+    if (error) {
+      toast.error("Erro ao atualizar equipamento.");
+      console.error(error);
+    } else {
+      toast.success("Equipamento atualizado com sucesso!");
+      fetchEquipments();
+    }
+  };
+
+  const deleteEquipment = async (id: number) => {
+    const { error } = await supabase.from("equipments").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao remover equipamento.");
+      console.error(error);
+    } else {
+      toast.success("Equipamento removido com sucesso!");
+      fetchEquipments();
+    }
+  };
+
+  const registerMaintenance = async (equipmentId: number, maintenanceData: { date: string; responsible: string; description: string | null; type: string }) => {
+    const newMaintenanceRecord: NewMaintenanceRecord = {
+      ...maintenanceData,
+      equipment_id: equipmentId
     };
-    setEquipments(prev => [...prev, newEquipment]);
-    toast.success("Equipamento adicionado com sucesso!");
-  };
 
-  const updateEquipment = (id: number, updates: Partial<Equipment>) => {
-    setEquipments(prev => 
-      prev.map(equipment => 
-        equipment.id === id ? { ...equipment, ...updates } : equipment
-      )
-    );
-    toast.success("Equipamento atualizado com sucesso!");
-  };
+    const { error: maintenanceError } = await supabase.from("maintenance_records").insert(newMaintenanceRecord);
 
-  const deleteEquipment = (id: number) => {
-    setEquipments(prev => prev.filter(equipment => equipment.id !== id));
-    toast.success("Equipamento removido com sucesso!");
-  };
+    if (maintenanceError) {
+      toast.error("Erro ao registrar manutenção.");
+      console.error(maintenanceError);
+      return;
+    }
 
-  const registerMaintenance = (equipmentId: number, maintenanceData: Omit<MaintenanceRecord, "id" | "equipmentId">) => {
     const equipment = equipments.find(e => e.id === equipmentId);
     if (!equipment) return;
-
-    // Atualiza as datas de manutenção
-    const today = new Date().toISOString().split('T')[0];
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + equipment.maintenanceInterval);
     
-    updateEquipment(equipmentId, {
-      lastMaintenance: today,
-      nextMaintenance: nextDate.toISOString().split('T')[0],
-      status: "Em Dia"
-    });
+    const today = new Date().toISOString().split('T')[0];
+    const nextDate = new Date(today);
+    nextDate.setDate(nextDate.getDate() + equipment.maintenance_interval);
 
-    toast.success("Manutenção registrada com sucesso!");
+    const { error: updateError } = await supabase.from("equipments").update({
+      last_maintenance: today,
+      next_maintenance: nextDate.toISOString().split('T')[0],
+      status: "Em Dia"
+    }).eq("id", equipmentId);
+    
+    if (updateError) {
+      toast.error("Erro ao atualizar equipamento.");
+      console.error(updateError);
+    } else {
+      toast.success("Manutenção registrada com sucesso!");
+      fetchEquipments();
+    }
   };
 
   return {
@@ -121,6 +111,7 @@ export function useEquipments() {
     addEquipment,
     updateEquipment,
     deleteEquipment,
-    registerMaintenance
+    registerMaintenance,
+    fetchEquipments,
   };
 }
