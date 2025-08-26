@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const items = [
   { title: "Dashboard", url: "/", icon: BarChart3 },
@@ -25,11 +26,6 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
-
-  const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/";
-    return currentPath.startsWith(path);
-  };
 
   const getNavCls = ({ isActive: active }: { isActive: boolean }) =>
     active ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50";
@@ -71,8 +67,4 @@ export function AppSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-}
-
-function cn(...classes: (string | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

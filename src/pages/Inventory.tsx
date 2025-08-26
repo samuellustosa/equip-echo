@@ -3,16 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Package, History, AlertTriangle, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Package, AlertTriangle, Edit, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useInventory } from "@/hooks/useInventory";
+import { useInventory, InventoryItem, NewInventoryItem } from "@/hooks/useInventory";
 import { AddInventoryDialog } from "@/components/inventory/add-inventory-dialog";
+import { EditInventoryDialog } from "@/components/inventory/edit-inventory-dialog";
+import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { toast } from "sonner";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const { inventoryItems, isLoading, addInventoryItem, deleteInventoryItem } = useInventory();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
+  const { inventoryItems, isLoading, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
 
   // Check for low stock items on load
   useEffect(() => {
@@ -50,6 +56,14 @@ export default function Inventory() {
   };
 
   const lowStockCount = inventoryItems.filter(item => item.quantity <= item.minimum).length;
+
+  const handleDelete = () => {
+    if (selectedItem) {
+      deleteInventoryItem(selectedItem.id);
+      setSelectedItem(null);
+      setShowDeleteDialog(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -174,6 +188,10 @@ export default function Inventory() {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0"
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setShowEditDialog(true);
+                              }}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -181,7 +199,10 @@ export default function Inventory() {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0"
-                              onClick={() => deleteInventoryItem(item.id)}
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setShowDeleteDialog(true);
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -201,6 +222,21 @@ export default function Inventory() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={addInventoryItem}
+      />
+      
+      <EditInventoryDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        item={selectedItem}
+        onSubmit={updateInventoryItem}
+      />
+
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        title="Tem certeza que deseja excluir?"
+        description="Esta ação não pode ser desfeita. O item será permanentemente removido do estoque."
       />
     </div>
   );

@@ -7,6 +7,8 @@ import { MainLayout } from "./components/layout/main-layout";
 import Dashboard from "./pages/Dashboard";
 import Equipments from "./pages/Equipments";
 import Inventory from "./pages/Inventory";
+import Users from "./pages/Users";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,16 @@ const App = () => (
           <Route path="/inventory" element={
             <MainLayout>
               <Inventory />
+            </MainLayout>
+          } />
+          <Route path="/users" element={
+            <MainLayout>
+              <Users />
+            </MainLayout>
+          } />
+          <Route path="/settings" element={
+            <MainLayout>
+              <Settings />
             </MainLayout>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Wrench, History, Edit } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Wrench, History, Edit, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -19,17 +19,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEquipments } from "@/hooks/useEquipments";
+import { useEquipments, Equipment, NewEquipment } from "@/hooks/useEquipments";
 import { AddEquipmentDialog } from "@/components/equipments/add-equipment-dialog";
 import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
+import { EditEquipmentDialog } from "@/components/equipments/edit-equipment-dialog";
+import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
+import { MaintenanceHistoryDialog } from "@/components/equipments/maintenance-history-dialog";
 
 export default function Equipments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<any | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   
-  const { equipments, addEquipment, registerMaintenance, isLoading } = useEquipments();
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  
+  const { equipments, addEquipment, registerMaintenance, updateEquipment, deleteEquipment, isLoading } = useEquipments();
 
   const filteredEquipments = equipments.filter(equipment =>
     equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,6 +54,14 @@ export default function Equipments() {
         return <StatusBadge status="danger">{status}</StatusBadge>;
       default:
         return <StatusBadge status="neutral">{status}</StatusBadge>;
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedEquipment) {
+      deleteEquipment(selectedEquipment.id);
+      setSelectedEquipment(null);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -147,13 +162,32 @@ export default function Equipments() {
                               <Wrench className="h-4 w-4 mr-2" />
                               Registrar Manutenção
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedEquipment(equipment);
+                                setShowHistoryDialog(true);
+                              }}
+                            >
                               <History className="h-4 w-4 mr-2" />
                               Ver Histórico
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedEquipment(equipment);
+                                setShowEditDialog(true);
+                              }}
+                            >
                               <Edit className="h-4 w-4 mr-2" />
                               Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedEquipment(equipment);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -178,6 +212,28 @@ export default function Equipments() {
         onOpenChange={setShowMaintenanceDialog}
         equipment={selectedEquipment}
         onSubmit={registerMaintenance}
+      />
+      
+      <EditEquipmentDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        equipment={selectedEquipment}
+        onSubmit={updateEquipment}
+      />
+      
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        title="Tem certeza que deseja excluir?"
+        description="Esta ação não pode ser desfeita. O equipamento e todos os registros de manutenção associados serão permanentemente excluídos."
+      />
+
+      <MaintenanceHistoryDialog
+        open={showHistoryDialog}
+        onOpenChange={setShowHistoryDialog}
+        equipmentId={selectedEquipment?.id || null}
+        equipmentName={selectedEquipment?.name || null}
       />
     </div>
   );
