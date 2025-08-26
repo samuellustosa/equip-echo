@@ -45,7 +45,12 @@ export function useInventory() {
   };
 
   const updateInventoryItem = async (id: number, updates: UpdatedInventoryItem) => {
-    const { error } = await supabase.from("inventory_items").update(updates).eq("id", id);
+    // Adicionamos a atualização do last_movement aqui
+    const updatedData = {
+      ...updates,
+      last_movement: new Date().toISOString().split('T')[0],
+    };
+    const { error } = await supabase.from("inventory_items").update(updatedData).eq("id", id);
     if (error) {
       toast.error("Erro ao atualizar item.");
       console.error(error);

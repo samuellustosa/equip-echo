@@ -25,6 +25,7 @@ import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 import { EditEquipmentDialog } from "@/components/equipments/edit-equipment-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { MaintenanceHistoryDialog } from "@/components/equipments/maintenance-history-dialog";
+import { cn } from "@/lib/utils";
 
 export default function Equipments() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,12 +58,33 @@ export default function Equipments() {
     }
   };
 
+  const getDaysUntilMaintenance = (nextMaintenance: string | null) => {
+    if (!nextMaintenance) return { text: "N/A", className: "text-muted-foreground" };
+    const today = new Date();
+    const nextDate = new Date(nextMaintenance);
+    const diffTime = nextDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) {
+      return { text: `Atrasado em ${Math.abs(diffDays)}d`, className: "text-destructive font-medium" };
+    } else if (diffDays <= 7) {
+      return { text: `${diffDays} dias`, className: "text-orange-500 font-medium" };
+    } else {
+      return { text: `${diffDays} dias`, className: "text-success font-medium" };
+    }
+  };
+
   const handleDelete = () => {
     if (selectedEquipment) {
       deleteEquipment(selectedEquipment.id);
       setSelectedEquipment(null);
       setShowDeleteDialog(false);
     }
+  };
+
+  const formatMaintenanceDate = (date: string | null) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('pt-BR');
   };
 
   return (
@@ -121,79 +143,89 @@ export default function Equipments() {
                   <TableHead>Status</TableHead>
                   <TableHead>Última Manutenção</TableHead>
                   <TableHead>Próxima Manutenção</TableHead>
+                  <TableHead>Dias Restantes</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">Carregando...</TableCell>
+                    <TableCell colSpan={8} className="text-center">Carregando...</TableCell>
                   </TableRow>
                 ) : (
-                  filteredEquipments.map((equipment) => (
-                    <TableRow key={equipment.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{equipment.name}</p>
-                          <p className="text-sm text-muted-foreground">{equipment.model}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{equipment.sector}</Badge>
-                      </TableCell>
-                      <TableCell>{equipment.responsible}</TableCell>
-                      <TableCell>{getStatusBadge(equipment.status)}</TableCell>
-                      <TableCell className="text-sm">{equipment.last_maintenance}</TableCell>
-                      <TableCell className="text-sm">{equipment.next_maintenance}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover border z-50">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedEquipment(equipment);
-                                setShowMaintenanceDialog(true);
-                              }}
-                            >
-                              <Wrench className="h-4 w-4 mr-2" />
-                              Registrar Manutenção
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedEquipment(equipment);
-                                setShowHistoryDialog(true);
-                              }}
-                            >
-                              <History className="h-4 w-4 mr-2" />
-                              Ver Histórico
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedEquipment(equipment);
-                                setShowEditDialog(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedEquipment(equipment);
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredEquipments.map((equipment, index) => {
+                    const { text, className: daysClassName } = getDaysUntilMaintenance(equipment.next_maintenance);
+                    const rowClassName = index % 2 === 1 ? 'bg-muted/50' : '';
+                    return (
+                      <TableRow key={equipment.id} className={cn(rowClassName, "hover:bg-muted/50")}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{equipment.name}</p>
+                            <p className="text-sm text-muted-foreground">{equipment.model}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{equipment.sector}</Badge>
+                        </TableCell>
+                        <TableCell>{equipment.responsible}</TableCell>
+                        <TableCell>{getStatusBadge(equipment.status)}</TableCell>
+                        <TableCell className="text-sm">{formatMaintenanceDate(equipment.last_maintenance)}</TableCell>
+                        <TableCell className="text-sm">{formatMaintenanceDate(equipment.next_maintenance)}</TableCell>
+                        <TableCell>
+                          <span className={daysClassName}>
+                            {text}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover border z-50">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEquipment(equipment);
+                                  setShowMaintenanceDialog(true);
+                                }}
+                              >
+                                <Wrench className="h-4 w-4 mr-2" />
+                                Registrar Manutenção
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEquipment(equipment);
+                                  setShowHistoryDialog(true);
+                                }}
+                              >
+                                <History className="h-4 w-4 mr-2" />
+                                Ver Histórico
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEquipment(equipment);
+                                  setShowEditDialog(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedEquipment(equipment);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Equipment, NewMaintenanceRecord } from "@/hooks/useEquipments";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MaintenanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment: Equipment | null;
-  onSubmit: (equipmentId: number, data: Omit<NewMaintenanceRecord, "equipment_id">) => void;
+  onSubmit: (equipmentId: number, data: Omit<NewMaintenanceRecord, "equipment_id">) => Promise<void>;
 }
 
 export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: MaintenanceDialogProps) {
@@ -34,19 +34,25 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
     description: "",
     type: "Preventiva"
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!equipment) return;
 
-    onSubmit(equipment.id, formData);
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      responsible: "",
-      description: "",
-      type: "Preventiva"
-    });
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      await onSubmit(equipment.id, formData);
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        responsible: "",
+        description: "",
+        type: "Preventiva"
+      });
+      onOpenChange(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -108,11 +114,11 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
           </div>
           
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-gradient-primary">
-              Registrar
+            <Button type="submit" className="bg-gradient-primary" disabled={isSubmitting}>
+              {isSubmitting ? "Registrando..." : "Registrar"}
             </Button>
           </DialogFooter>
         </form>

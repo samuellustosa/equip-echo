@@ -31,20 +31,25 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
     model: "",
     sector: "",
     responsible: "",
-    maintenance_interval: 30
+    maintenance_interval: 30,
+    last_maintenance: new Date().toISOString().split('T')[0] // Adicionado estado para a data de última manutenção
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const today = new Date();
-    const nextMaintenance = new Date();
-    nextMaintenance.setDate(today.getDate() + formData.maintenance_interval);
+    const lastMaintenanceDate = new Date(formData.last_maintenance);
+    const nextMaintenance = new Date(lastMaintenanceDate);
+    nextMaintenance.setDate(lastMaintenanceDate.getDate() + formData.maintenance_interval);
 
     const newEquipment: NewEquipment = {
-      ...formData,
+      name: formData.name,
+      model: formData.model,
+      sector: formData.sector,
+      responsible: formData.responsible,
+      maintenance_interval: formData.maintenance_interval,
       status: "Em Dia",
-      last_maintenance: today.toISOString().split('T')[0],
+      last_maintenance: formData.last_maintenance,
       next_maintenance: nextMaintenance.toISOString().split('T')[0]
     };
 
@@ -54,7 +59,8 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
       model: "",
       sector: "",
       responsible: "",
-      maintenance_interval: 30
+      maintenance_interval: 30,
+      last_maintenance: new Date().toISOString().split('T')[0] // Resetar para a data atual
     });
     onOpenChange(false);
   };
@@ -129,6 +135,18 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
               onChange={(e) => setFormData(prev => ({ ...prev, maintenance_interval: parseInt(e.target.value) }))}
               placeholder="30"
               min="1"
+              required
+            />
+          </div>
+
+          {/* Novo campo para a data da última manutenção */}
+          <div className="space-y-2">
+            <Label htmlFor="last_maintenance">Data da Última Manutenção</Label>
+            <Input
+              id="last_maintenance"
+              type="date"
+              value={formData.last_maintenance}
+              onChange={(e) => setFormData(prev => ({ ...prev, last_maintenance: e.target.value }))}
               required
             />
           </div>

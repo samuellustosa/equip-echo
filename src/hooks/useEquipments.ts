@@ -12,6 +12,24 @@ export type UpdatedEquipment = Database['public']['Tables']['equipments']['Updat
 export type MaintenanceRecord = Database['public']['Tables']['maintenance_records']['Row'];
 export type NewMaintenanceRecord = Database['public']['Tables']['maintenance_records']['Insert'];
 
+// Lógica para calcular o status do equipamento
+const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Aviso" | "Atrasado" => {
+  if (!nextMaintenance) return "Em Dia";
+
+  const today = new Date();
+  const nextDate = new Date(nextMaintenance);
+  const diffTime = nextDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return "Atrasado";
+  }
+  if (diffDays <= 7) { // Define 7 dias como o período de aviso
+    return "Com Aviso";
+  }
+  return "Em Dia";
+};
+
 export function useEquipments() {
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +45,11 @@ export function useEquipments() {
       toast.error("Erro ao buscar equipamentos.");
       console.error(error);
     } else {
-      setEquipments(data);
+      const equipmentsWithStatus = data.map(eq => ({
+        ...eq,
+        status: getEquipmentStatus(eq.next_maintenance)
+      }));
+      setEquipments(equipmentsWithStatus as Equipment[]);
     }
     setIsLoading(false);
   };
@@ -37,7 +59,11 @@ export function useEquipments() {
   }, []);
 
   const addEquipment = async (equipment: NewEquipment) => {
-    const { error } = await supabase.from("equipments").insert(equipment);
+    const newEquipmentData = {
+      ...equipment,
+      status: "Em Dia",
+    };
+    const { error } = await supabase.from("equipments").insert(newEquipmentData);
     if (error) {
       toast.error("Erro ao adicionar equipamento.");
       console.error(error);
@@ -86,22 +112,31 @@ export function useEquipments() {
     const equipment = equipments.find(e => e.id === equipmentId);
     if (!equipment) return;
     
-    const today = new Date().toISOString().split('T')[0];
-    const nextDate = new Date(today);
-    nextDate.setDate(nextDate.getDate() + equipment.maintenance_interval);
+    // Cria a data de forma robusta para evitar problemas de fuso horário
+    const lastMaintenanceDate = new Date(`${maintenanceData.date}T00:00:00`);
+    const nextMaintenance = new Date(lastMaintenanceDate);
+    nextMaintenance.setDate(lastMaintenanceDate.getDate() + (equipment.maintenance_interval || 30));
 
-    const { error: updateError } = await supabase.from("equipments").update({
-      last_maintenance: today,
-      next_maintenance: nextDate.toISOString().split('T')[0],
-      status: "Em Dia"
-    }).eq("id", equipmentId);
+    const { data: updatedEquipmentData, error: updateError } = await supabase.from("equipments").update({
+      last_maintenance: maintenanceData.date,
+      next_maintenance: nextMaintenance.toISOString().split('T')[0],
+      status: getEquipmentStatus(nextMaintenance.toISOString().split('T')[0])
+    }).eq("id", equipmentId).select();
     
     if (updateError) {
       toast.error("Erro ao atualizar equipamento.");
       console.error(updateError);
     } else {
       toast.success("Manutenção registrada com sucesso!");
-      fetchEquipments();
+      if (updatedEquipmentData && updatedEquipmentData.length > 0) {
+        setEquipments(prevEquipments =>
+          prevEquipments.map(eq =>
+            eq.id === equipmentId ? { ...eq, ...updatedEquipmentData[0] } : eq
+          )
+        );
+      } else {
+        fetchEquipments(); // Fallback para recarregar se a resposta estiver vazia
+      }
     }
   };
 

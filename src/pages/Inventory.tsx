@@ -10,6 +10,15 @@ import { AddInventoryDialog } from "@/components/inventory/add-inventory-dialog"
 import { EditInventoryDialog } from "@/components/inventory/edit-inventory-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,19 +51,6 @@ export default function Inventory() {
     return { status: "success" as const, label: "Normal" };
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Disponível":
-        return <StatusBadge status="success">{status}</StatusBadge>;
-      case "EM MANUTENÇÃO":
-        return <StatusBadge status="warning">{status}</StatusBadge>;
-      case "DEFEITUOSO":
-        return <StatusBadge status="danger">{status}</StatusBadge>;
-      default:
-        return <StatusBadge status="neutral">{status}</StatusBadge>;
-    }
-  };
-
   const lowStockCount = inventoryItems.filter(item => item.quantity <= item.minimum).length;
 
   const handleDelete = () => {
@@ -63,6 +59,11 @@ export default function Inventory() {
       setSelectedItem(null);
       setShowDeleteDialog(false);
     }
+  };
+  
+  const formatMovementDate = (date: string | null) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('pt-BR');
   };
 
   return (
@@ -143,46 +144,47 @@ export default function Inventory() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left font-medium p-2">Item</th>
-                    <th className="text-left font-medium p-2">Categoria</th>
-                    <th className="text-left font-medium p-2">Quantidade</th>
-                    <th className="text-left font-medium p-2">Localização</th>
-                    <th className="text-left font-medium p-2">Status</th>
-                    <th className="text-left font-medium p-2">Última Movimentação</th>
-                    <th className="text-left font-medium p-2">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.map((item) => {
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Quantidade</TableHead>
+                    <TableHead>Localização</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Última Movimentação</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.map((item, index) => {
                     const stockStatus = getStockStatus(item.quantity, item.minimum);
+                    const rowClassName = index % 2 === 1 ? 'bg-muted/50' : '';
                     return (
-                      <tr key={item.id} className="border-b hover:bg-muted/50">
-                        <td className="p-2">
+                      <TableRow key={item.id} className={cn(rowClassName, "hover:bg-muted/50")}>
+                        <TableCell>
                           <div>
                             <p className="font-medium">{item.name}</p>
                             <p className="text-sm text-muted-foreground">
                               Min: {item.minimum} {item.unit}
                             </p>
                           </div>
-                        </td>
-                        <td className="p-2">
+                        </TableCell>
+                        <TableCell>
                           <Badge variant="outline">{item.category}</Badge>
-                        </td>
-                        <td className="p-2">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{item.quantity} {item.unit}</span>
                             <StatusBadge status={stockStatus.status}>
                               {stockStatus.label}
                             </StatusBadge>
                           </div>
-                        </td>
-                        <td className="p-2">{item.location || '-'}</td>
-                        <td className="p-2">{getStatusBadge(item.status)}</td>
-                        <td className="p-2 text-sm">{item.last_movement || '-'}</td>
-                        <td className="p-2">
+                        </TableCell>
+                        <TableCell>{item.location || '-'}</TableCell>
+                        <TableCell><StatusBadge status="neutral">{item.status}</StatusBadge></TableCell>
+                        <TableCell className="text-sm">{formatMovementDate(item.last_movement)}</TableCell>
+                        <TableCell>
                           <div className="flex space-x-2">
                             <Button
                               variant="ghost"
@@ -207,12 +209,12 @@ export default function Inventory() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

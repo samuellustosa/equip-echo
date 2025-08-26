@@ -26,11 +26,6 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
 
-  const isActive = (path: string) => {
-    if (path === "/") return currentPath === "/";
-    return currentPath.startsWith(path);
-  };
-
   const getNavCls = ({ isActive: active }: { isActive: boolean }) =>
     active ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50";
 
