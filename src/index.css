@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 248 250 252;
+    --background: 220 14.3% 97.4%;
     --foreground: 210 18% 12%;
 
     --card: 0 0% 100%;
@@ -34,9 +34,9 @@ All colors MUST be HSL.
     --success-foreground: 0 0% 100%;
     --success-light: 142 52% 95%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --warning-light: 38 90% 95%;
+    --warning: 210 20% 90%; /* Cor de aviso alterada para cinza */
+    --warning-foreground: 210 18% 12%;
+    --warning-light: 210 20% 95%; /* Cor de aviso alterada para cinza claro */
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -45,29 +45,17 @@ All colors MUST be HSL.
     --input: 214 32% 91%;
     --ring: 217 91% 60%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
-    
-    /* Shadows */
-    --shadow-elegant: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
-    --shadow-card: 0 1px 3px 0 hsl(210 18% 12% / 0.1), 0 1px 2px 0 hsl(210 18% 12% / 0.06);
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-background: 210 18% 20%; /* Fundo da sidebar com cor mais forte */
+    --sidebar-foreground: 210 40% 98%; /* Cor do texto da sidebar para contraste */
 
     --sidebar-primary: 240 5.9% 10%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 210 18% 30%; /* Cor de destaque da sidebar */
+    --sidebar-accent-foreground: 210 40% 98%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 210 18% 16%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
@@ -99,9 +87,9 @@ All colors MUST be HSL.
     --success-foreground: 0 0% 100%;
     --success-light: 142 52% 15%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --warning-light: 38 90% 15%;
+    --warning: 210 18% 16%;
+    --warning-foreground: 210 40% 98%;
+    --warning-light: 210 18% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -109,12 +97,13 @@ All colors MUST be HSL.
     --border: 210 18% 16%;
     --input: 210 18% 16%;
     --ring: 217 91% 60%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+
+    --sidebar-background: 210 18% 20%;
+    --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-accent: 210 18% 30%;
+    --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
