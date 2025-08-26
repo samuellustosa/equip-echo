@@ -1,29 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Package, History, AlertTriangle } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, Package, History, AlertTriangle, Edit, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useInventory } from "@/hooks/useInventory";
+import { AddInventoryDialog } from "@/components/inventory/add-inventory-dialog";
+import { toast } from "sonner";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { inventoryItems, isLoading } = useInventory();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const { inventoryItems, isLoading, addInventoryItem, deleteInventoryItem } = useInventory();
+
+  // Check for low stock items on load
+  useEffect(() => {
+    const lowStockItems = inventoryItems.filter(item => item.quantity <= item.minimum);
+    if (lowStockItems.length > 0) {
+      toast.warning(`${lowStockItems.length} item(ns) com estoque baixo!`, {
+        description: lowStockItems.map(item => item.name).join(", ")
+      });
+    }
+  }, [inventoryItems]);
 
   const filteredItems = inventoryItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,7 +38,7 @@ export default function Inventory() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "ATIVO":
+      case "Disponível":
         return <StatusBadge status="success">{status}</StatusBadge>;
       case "EM MANUTENÇÃO":
         return <StatusBadge status="warning">{status}</StatusBadge>;
@@ -64,7 +63,7 @@ export default function Inventory() {
             <Package className="h-4 w-4 mr-2" />
             Categorias
           </Button>
-          <Button className="bg-gradient-primary hover:shadow-elegant transition-all">
+          <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-primary hover:shadow-elegant transition-all">
             <Plus className="h-4 w-4 mr-2" />
             Novo Item
           </Button>
@@ -115,86 +114,94 @@ export default function Inventory() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Quantidade</TableHead>
-                  <TableHead>Localização</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Última Movimentação</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center">Carregando...</TableCell>
-                  </TableRow>
-                ) : (
-                  filteredItems.map((item) => {
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-4">Carregando...</p>
+            </div>
+          ) : filteredItems.length === 0 && !searchTerm ? (
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhum item cadastrado</p>
+              <p className="text-sm text-muted-foreground">
+                Adicione o primeiro item ao seu inventário
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left font-medium p-2">Item</th>
+                    <th className="text-left font-medium p-2">Categoria</th>
+                    <th className="text-left font-medium p-2">Quantidade</th>
+                    <th className="text-left font-medium p-2">Localização</th>
+                    <th className="text-left font-medium p-2">Status</th>
+                    <th className="text-left font-medium p-2">Última Movimentação</th>
+                    <th className="text-left font-medium p-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((item) => {
                     const stockStatus = getStockStatus(item.quantity, item.minimum);
                     return (
-                      <TableRow key={item.id} className="hover:bg-muted/50">
-                        <TableCell>
+                      <tr key={item.id} className="border-b hover:bg-muted/50">
+                        <td className="p-2">
                           <div>
                             <p className="font-medium">{item.name}</p>
                             <p className="text-sm text-muted-foreground">
                               Min: {item.minimum} {item.unit}
                             </p>
                           </div>
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="p-2">
                           <Badge variant="outline">{item.category}</Badge>
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="p-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{item.quantity}</span>
+                            <span className="font-medium">{item.quantity} {item.unit}</span>
                             <StatusBadge status={stockStatus.status}>
                               {stockStatus.label}
                             </StatusBadge>
                           </div>
-                        </TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell className="text-sm">{item.last_movement}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover border z-50">
-                              <DropdownMenuItem>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Entrada
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Package className="h-4 w-4 mr-2" />
-                                Saída
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <History className="h-4 w-4 mr-2" />
-                                Histórico
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                Editar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                        <td className="p-2">{item.location || '-'}</td>
+                        <td className="p-2">{getStatusBadge(item.status)}</td>
+                        <td className="p-2 text-sm">{item.last_movement || '-'}</td>
+                        <td className="p-2">
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => deleteInventoryItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <AddInventoryDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={addInventoryItem}
+      />
     </div>
   );
 }
