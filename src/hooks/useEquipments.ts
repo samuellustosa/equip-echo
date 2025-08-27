@@ -1,21 +1,48 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Database, Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { parseISO, addDays, format } from "date-fns";
 
-// Tipos para a tabela 'equipments'
-export type Equipment = Tables<'equipments'>;
-export type NewEquipment = TablesInsert<'equipments'>;
-export type UpdatedEquipment = TablesUpdate<'equipments'>;
+// Local type definitions to avoid Supabase types issues
+export type Equipment = {
+  id: number;
+  name: string;
+  model?: string;
+  sector: string;
+  responsible: string;
+  status: string;
+  maintenance_interval: number;
+  last_maintenance?: string;
+  next_maintenance?: string;
+  created_at: string;
+};
 
-// Tipos para a tabela 'maintenance_records'
-export type MaintenanceRecord = Tables<'maintenance_records'>;
-export type NewMaintenanceRecord = TablesInsert<'maintenance_records'>;
+export type NewEquipment = Omit<Equipment, 'id' | 'created_at'>;
+export type UpdatedEquipment = Partial<Omit<Equipment, 'id' | 'created_at'>>;
 
-// Tipos para as novas tabelas
-export type Sector = Tables<'sectors'>;
-export type Responsible = Tables<'responsibles'>;
+export type MaintenanceRecord = {
+  id: number;
+  equipment_id: number;
+  date: string;
+  responsible: string;
+  description?: string;
+  type: string;
+  created_at: string;
+};
+
+export type NewMaintenanceRecord = Omit<MaintenanceRecord, 'id' | 'created_at'>;
+
+export type Sector = {
+  id: number;
+  name: string;
+  created_at: string;
+};
+
+export type Responsible = {
+  id: number;
+  name: string;
+  created_at: string;
+};
 
 // Lógica para calcular o status do equipamento
 const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Aviso" | "Atrasado" => {

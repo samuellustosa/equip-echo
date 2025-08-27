@@ -24,11 +24,11 @@ interface MaintenanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment: Equipment | null;
-  onSubmit: (equipmentId: number, data: Omit<NewMaintenanceRecord, "equipment_id">) => Promise<void>;
+  onSubmit: (data: { date: string; responsible: string; description: string | null; type: string }) => Promise<void>;
+  responsibles: string[];
 }
 
-export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: MaintenanceDialogProps) {
-  const { responsibles } = useEquipments();
+export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit, responsibles }: MaintenanceDialogProps) {
   const [formData, setFormData] = useState({
     date: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
     responsible: "",
@@ -43,7 +43,7 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
 
     setIsSubmitting(true);
     try {
-      await onSubmit(equipment.id, formData);
+      await onSubmit(formData);
       setFormData({
         date: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
         responsible: "",

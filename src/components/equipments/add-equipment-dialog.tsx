@@ -23,10 +23,11 @@ interface AddEquipmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (equipment: NewEquipment) => void;
+  sectors: string[];
+  responsibles: string[];
 }
 
-export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmentDialogProps) {
-  const { sectors, responsibles } = useEquipments();
+export function AddEquipmentDialog({ open, onOpenChange, onSubmit, sectors, responsibles }: AddEquipmentDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     model: "",
