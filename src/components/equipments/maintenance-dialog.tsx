@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Equipment, NewMaintenanceRecord } from "@/hooks/useEquipments";
+import { Equipment, NewMaintenanceRecord, useEquipments } from "@/hooks/useEquipments";
 import { Textarea } from "@/components/ui/textarea";
 
 interface MaintenanceDialogProps {
@@ -28,8 +28,9 @@ interface MaintenanceDialogProps {
 }
 
 export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: MaintenanceDialogProps) {
+  const { responsibles } = useEquipments();
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
     responsible: "",
     description: "",
     type: "Preventiva"
@@ -44,7 +45,7 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
     try {
       await onSubmit(equipment.id, formData);
       setFormData({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
         responsible: "",
         description: "",
         type: "Preventiva"
@@ -79,18 +80,21 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
           
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável</Label>
-            <Input
-              id="responsible"
-              value={formData.responsible}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
-              placeholder="Nome do técnico responsável"
-              required
-            />
+            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, responsible: value }))} value={formData.responsible}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {responsibles.map((responsible) => (
+                  <SelectItem key={responsible} value={responsible}>{responsible}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="type">Tipo de Manutenção</Label>
-            <Select onValueChange={(value: "Preventiva" | "Corretiva") => setFormData(prev => ({ ...prev, type: value }))}>
+            <Select onValueChange={(value: "Preventiva" | "Corretiva") => setFormData(prev => ({ ...prev, type: value }))} value={formData.type}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
@@ -109,7 +113,6 @@ export function MaintenanceDialog({ open, onOpenChange, equipment, onSubmit }: M
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Descreva os procedimentos realizados..."
               rows={3}
-              required
             />
           </div>
           

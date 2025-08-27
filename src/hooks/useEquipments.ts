@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { parseISO, addDays, format } from "date-fns";
 
 // Tipos para a tabela 'equipments'
 export type Equipment = Database['public']['Tables']['equipments']['Row'];
@@ -17,7 +18,7 @@ const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Avi
   if (!nextMaintenance) return "Em Dia";
 
   const today = new Date();
-  const nextDate = new Date(nextMaintenance);
+  const nextDate = parseISO(nextMaintenance);
   const diffTime = nextDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -33,6 +34,10 @@ const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Avi
 export function useEquipments() {
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Listas fixas para seleção, que podem ser editadas diretamente aqui.
+  const sectors = ["Administração", "TI", "Recepção", "Sala de Reunião", "Almoxarifado", "RH"];
+  const responsibles = ["Samuel", "Gabriel", "Maria", "Carlos"];
 
   const fetchEquipments = async () => {
     setIsLoading(true);
@@ -112,31 +117,26 @@ export function useEquipments() {
     const equipment = equipments.find(e => e.id === equipmentId);
     if (!equipment) return;
     
-    // Cria a data de forma robusta para evitar problemas de fuso horário
-    const lastMaintenanceDate = new Date(`${maintenanceData.date}T00:00:00`);
-    const nextMaintenance = new Date(lastMaintenanceDate);
-    nextMaintenance.setDate(lastMaintenanceDate.getDate() + (equipment.maintenance_interval || 30));
+    // Cria a data de forma robusta e segura
+    const lastMaintenanceDate = parseISO(maintenanceData.date);
+    const nextMaintenanceDate = addDays(lastMaintenanceDate, equipment.maintenance_interval || 30);
 
-    const { data: updatedEquipmentData, error: updateError } = await supabase.from("equipments").update({
-      last_maintenance: maintenanceData.date,
-      next_maintenance: nextMaintenance.toISOString().split('T')[0],
-      status: getEquipmentStatus(nextMaintenance.toISOString().split('T')[0])
-    }).eq("id", equipmentId).select();
+    const updates = {
+      last_maintenance: format(lastMaintenanceDate, 'yyyy-MM-dd'),
+      next_maintenance: format(nextMaintenanceDate, 'yyyy-MM-dd'),
+    }
+
+    const { error: updateError } = await supabase.from("equipments").update({
+      ...updates,
+      status: getEquipmentStatus(updates.next_maintenance)
+    }).eq("id", equipmentId);
     
     if (updateError) {
       toast.error("Erro ao atualizar equipamento.");
       console.error(updateError);
     } else {
       toast.success("Manutenção registrada com sucesso!");
-      if (updatedEquipmentData && updatedEquipmentData.length > 0) {
-        setEquipments(prevEquipments =>
-          prevEquipments.map(eq =>
-            eq.id === equipmentId ? { ...eq, ...updatedEquipmentData[0] } : eq
-          )
-        );
-      } else {
-        fetchEquipments(); // Fallback para recarregar se a resposta estiver vazia
-      }
+      fetchEquipments();
     }
   };
 
@@ -148,5 +148,7 @@ export function useEquipments() {
     deleteEquipment,
     registerMaintenance,
     fetchEquipments,
+    sectors,
+    responsibles,
   };
 }

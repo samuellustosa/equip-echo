@@ -60,15 +60,21 @@ export default function Equipments() {
 
   const getDaysUntilMaintenance = (nextMaintenance: string | null) => {
     if (!nextMaintenance) return { text: "N/A", className: "text-muted-foreground" };
+    
+    // Converte ambas as datas para o fuso horário local no início do dia para uma comparação precisa
     const today = new Date();
-    const nextDate = new Date(nextMaintenance);
+    today.setHours(0, 0, 0, 0);
+
+    const nextDate = new Date(nextMaintenance + 'T00:00:00');
+    
     const diffTime = nextDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays <= 0) {
+    if (diffDays < 0) {
       return { text: `Atrasado em ${Math.abs(diffDays)}d`, className: "text-destructive font-medium" };
     } else if (diffDays <= 7) {
-      return { text: `${diffDays} dias`, className: "text-orange-500 font-medium" };
+      // Alteração aqui: usando a cor warning em vez de orange-500
+      return { text: `${diffDays} dias`, className: "text-warning font-medium" };
     } else {
       return { text: `${diffDays} dias`, className: "text-success font-medium" };
     }
@@ -84,7 +90,9 @@ export default function Equipments() {
 
   const formatMaintenanceDate = (date: string | null) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('pt-BR');
+    // Adiciona a hora T00:00:00 para garantir que a data seja interpretada como fuso horário local
+    const formattedDate = new Date(date + 'T00:00:00');
+    return formattedDate.toLocaleDateString('pt-BR');
   };
 
   return (

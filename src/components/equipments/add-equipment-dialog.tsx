@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { NewEquipment } from "@/hooks/useEquipments";
+import { NewEquipment, useEquipments } from "@/hooks/useEquipments";
 
 interface AddEquipmentDialogProps {
   open: boolean;
@@ -26,13 +26,14 @@ interface AddEquipmentDialogProps {
 }
 
 export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmentDialogProps) {
+  const { sectors, responsibles } = useEquipments();
   const [formData, setFormData] = useState({
     name: "",
     model: "",
     sector: "",
     responsible: "",
     maintenance_interval: 30,
-    last_maintenance: new Date().toISOString().split('T')[0] // Adicionado estado para a data de última manutenção
+    last_maintenance: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,7 +61,7 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
       sector: "",
       responsible: "",
       maintenance_interval: 30,
-      last_maintenance: new Date().toISOString().split('T')[0] // Resetar para a data atual
+      last_maintenance: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0]
     });
     onOpenChange(false);
   };
@@ -105,25 +106,25 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
                 <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Administração">Administração</SelectItem>
-                <SelectItem value="TI">TI</SelectItem>
-                <SelectItem value="Recepção">Recepção</SelectItem>
-                <SelectItem value="Sala de Reunião">Sala de Reunião</SelectItem>
-                <SelectItem value="Almoxarifado">Almoxarifado</SelectItem>
-                <SelectItem value="RH">RH</SelectItem>
+                {sectors.map((sector) => (
+                  <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável</Label>
-            <Input
-              id="responsible"
-              value={formData.responsible}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
-              placeholder="Ex: João Silva"
-              required
-            />
+            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, responsible: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {responsibles.map((responsible) => (
+                  <SelectItem key={responsible} value={responsible}>{responsible}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
@@ -139,7 +140,6 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit }: AddEquipmen
             />
           </div>
 
-          {/* Novo campo para a data da última manutenção */}
           <div className="space-y-2">
             <Label htmlFor="last_maintenance">Data da Última Manutenção</Label>
             <Input
