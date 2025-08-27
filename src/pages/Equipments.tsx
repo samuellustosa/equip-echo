@@ -26,6 +26,9 @@ import { EditEquipmentDialog } from "@/components/equipments/edit-equipment-dial
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { MaintenanceHistoryDialog } from "@/components/equipments/maintenance-history-dialog";
 import { cn } from "@/lib/utils";
+import { FilterPopover } from "@/components/shared/filter-popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Equipments() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,11 +41,18 @@ export default function Equipments() {
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   
   const { equipments, addEquipment, registerMaintenance, updateEquipment, deleteEquipment, isLoading } = useEquipments();
+  
+  const [filters, setFilters] = useState<string[]>([]);
 
+  const handleFilterChange = (status: string, checked: boolean) => {
+    setFilters(prev => checked ? [...prev, status] : prev.filter(s => s !== status));
+  };
+  
   const filteredEquipments = equipments.filter(equipment =>
-    equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     equipment.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equipment.responsible.toLowerCase().includes(searchTerm.toLowerCase())
+    equipment.responsible.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (filters.length === 0 || filters.includes(equipment.status))
   );
 
   const getStatusBadge = (status: string) => {
@@ -124,10 +134,34 @@ export default function Equipments() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
+            <FilterPopover filterLabel="Filtros">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-emdia" 
+                    checked={filters.includes("Em Dia")} 
+                    onCheckedChange={(checked) => handleFilterChange("Em Dia", checked as boolean)} 
+                  />
+                  <Label htmlFor="filter-emdia">Em Dia</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-comaviso" 
+                    checked={filters.includes("Com Aviso")} 
+                    onCheckedChange={(checked) => handleFilterChange("Com Aviso", checked as boolean)} 
+                  />
+                  <Label htmlFor="filter-comaviso">Com Aviso</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="filter-atrasado" 
+                    checked={filters.includes("Atrasado")} 
+                    onCheckedChange={(checked) => handleFilterChange("Atrasado", checked as boolean)} 
+                  />
+                  <Label htmlFor="filter-atrasado">Atrasado</Label>
+                </div>
+              </div>
+            </FilterPopover>
           </div>
         </CardContent>
       </Card>

@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { Database, Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { parseISO, addDays, format } from "date-fns";
 
 // Tipos para a tabela 'equipments'
-export type Equipment = Database['public']['Tables']['equipments']['Row'];
-export type NewEquipment = Database['public']['Tables']['equipments']['Insert'];
-export type UpdatedEquipment = Database['public']['Tables']['equipments']['Update'];
+export type Equipment = Tables<'equipments'>;
+export type NewEquipment = TablesInsert<'equipments'>;
+export type UpdatedEquipment = TablesUpdate<'equipments'>;
 
 // Tipos para a tabela 'maintenance_records'
-export type MaintenanceRecord = Database['public']['Tables']['maintenance_records']['Row'];
-export type NewMaintenanceRecord = Database['public']['Tables']['maintenance_records']['Insert'];
+export type MaintenanceRecord = Tables<'maintenance_records'>;
+export type NewMaintenanceRecord = TablesInsert<'maintenance_records'>;
+
+// Tipos para as novas tabelas
+export type Sector = Tables<'sectors'>;
+export type Responsible = Tables<'responsibles'>;
 
 // Lógica para calcular o status do equipamento
 const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Aviso" | "Atrasado" => {
@@ -25,7 +29,7 @@ const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Avi
   if (diffDays < 0) {
     return "Atrasado";
   }
-  if (diffDays <= 7) { // Define 7 dias como o período de aviso
+  if (diffDays <= 7) {
     return "Com Aviso";
   }
   return "Em Dia";
@@ -34,10 +38,30 @@ const getEquipmentStatus = (nextMaintenance: string | null): "Em Dia" | "Com Avi
 export function useEquipments() {
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sectors, setSectors] = useState<string[]>([]);
+  const [responsibles, setResponsibles] = useState<string[]>([]);
 
-  // Listas fixas para seleção, que podem ser editadas diretamente aqui.
-  const sectors = ["Administração", "TI", "Recepção", "Sala de Reunião", "Almoxarifado", "RH"];
-  const responsibles = ["Samuel", "Gabriel", "Maria", "Carlos"];
+  const fetchLists = async () => {
+    // Buscar setores
+    const { data: sectorsData, error: sectorsError } = await supabase
+      .from("sectors")
+      .select("name");
+    if (sectorsError) {
+      console.error("Erro ao buscar setores:", sectorsError);
+    } else {
+      setSectors(sectorsData.map(s => s.name));
+    }
+
+    // Buscar responsáveis
+    const { data: responsiblesData, error: responsiblesError } = await supabase
+      .from("responsibles")
+      .select("name");
+    if (responsiblesError) {
+      console.error("Erro ao buscar responsáveis:", responsiblesError);
+    } else {
+      setResponsibles(responsiblesData.map(r => r.name));
+    }
+  };
 
   const fetchEquipments = async () => {
     setIsLoading(true);
@@ -60,6 +84,7 @@ export function useEquipments() {
   };
 
   useEffect(() => {
+    fetchLists();
     fetchEquipments();
   }, []);
 

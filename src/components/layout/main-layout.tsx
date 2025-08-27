@@ -4,6 +4,7 @@ import { Bell, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearch } from "@/hooks/useSearch";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const { user, logout } = useAuth();
+  const { searchTerm, setSearchTerm } = useSearch();
   
   const handleLogout = () => {
     logout();
@@ -31,6 +33,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <Input 
                   placeholder="Buscar equipamentos, itens..." 
                   className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>

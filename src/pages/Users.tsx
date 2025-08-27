@@ -5,15 +5,27 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useUsers, NewUser } from "@/hooks/useUsers";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function Users() {
+  const { users, isLoading, addUser } = useUsers();
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
-  
-  // Exemplo de lista de usuários mock
-  const users = [
-    { id: 1, name: "João Silva", email: "joao.silva@empresa.com", role: "Administrador" },
-    { id: 2, name: "Maria Oliveira", email: "maria.oliveira@empresa.com", role: "Técnico" },
-  ];
+  const [formData, setFormData] = useState<NewUser>({ name: "", email: "", role: "Técnico" });
+
+  const handleAddUserSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addUser(formData);
+    setFormData({ name: "", email: "", role: "Técnico" });
+    setShowAddUserDialog(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -36,7 +48,9 @@ export default function Users() {
           <CardDescription>{users.length} usuário(s) encontrado(s)</CardDescription>
         </CardHeader>
         <CardContent>
-          {users.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8">Carregando...</div>
+          ) : users.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center text-muted-foreground">
                 <User className="h-12 w-12 mx-auto mb-4" />
@@ -45,24 +59,24 @@ export default function Users() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left font-medium p-2">Nome</th>
-                    <th className="text-left font-medium p-2">Email</th>
-                    <th className="text-left font-medium p-2">Função</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left font-medium p-2">Nome</TableHead>
+                    <TableHead className="text-left font-medium p-2">Email</TableHead>
+                    <TableHead className="text-left font-medium p-2">Função</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {users.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2 font-medium">{user.name}</td>
-                      <td className="p-2 text-muted-foreground">{user.email}</td>
-                      <td className="p-2">{user.role}</td>
-                    </tr>
+                    <TableRow key={user.id} className="border-b hover:bg-muted/50">
+                      <TableCell className="p-2 font-medium">{user.name}</TableCell>
+                      <TableCell className="p-2 text-muted-foreground">{user.email}</TableCell>
+                      <TableCell className="p-2">{user.role}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -74,14 +88,14 @@ export default function Users() {
             <DialogTitle>Adicionar Novo Usuário</DialogTitle>
             <DialogDescription>Preencha os detalhes do novo usuário.</DialogDescription>
           </DialogHeader>
-          <form className="space-y-4">
+          <form onSubmit={handleAddUserSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" placeholder="Nome Completo" />
+              <Input id="name" placeholder="Nome Completo" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="email@exemplo.com" />
+              <Input id="email" type="email" placeholder="email@exemplo.com" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAddUserDialog(false)}>

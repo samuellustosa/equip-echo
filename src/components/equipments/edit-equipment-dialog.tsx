@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Equipment, UpdatedEquipment } from "@/hooks/useEquipments";
+import { Equipment, UpdatedEquipment, useEquipments } from "@/hooks/useEquipments";
 
 interface EditEquipmentDialogProps {
   open: boolean;
@@ -27,6 +27,7 @@ interface EditEquipmentDialogProps {
 }
 
 export function EditEquipmentDialog({ open, onOpenChange, equipment, onSubmit }: EditEquipmentDialogProps) {
+  const { sectors, responsibles } = useEquipments();
   const [formData, setFormData] = useState<UpdatedEquipment>({
     name: "",
     model: "",
@@ -95,25 +96,25 @@ export function EditEquipmentDialog({ open, onOpenChange, equipment, onSubmit }:
                 <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Administração">Administração</SelectItem>
-                <SelectItem value="TI">TI</SelectItem>
-                <SelectItem value="Recepção">Recepção</SelectItem>
-                <SelectItem value="Sala de Reunião">Sala de Reunião</SelectItem>
-                <SelectItem value="Almoxarifado">Almoxarifado</SelectItem>
-                <SelectItem value="RH">RH</SelectItem>
+                {sectors.map((sector) => (
+                  <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="responsible">Responsável</Label>
-            <Input
-              id="responsible"
-              value={formData.responsible || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, responsible: e.target.value }))}
-              placeholder="Ex: João Silva"
-              required
-            />
+            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, responsible: value }))} value={formData.responsible || ""}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {responsibles.map((responsible) => (
+                  <SelectItem key={responsible} value={responsible}>{responsible}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

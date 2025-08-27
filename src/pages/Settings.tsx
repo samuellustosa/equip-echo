@@ -3,8 +3,12 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 export default function Settings() {
+  const [emailNotifications, setEmailNotifications] = useState(false);
+  const [darkTheme, setDarkTheme] = useState(false);
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Configurações</h1>
@@ -22,7 +26,7 @@ export default function Settings() {
                 Receba alertas sobre manutenções e estoque por email.
               </p>
             </div>
-            <Switch />
+            <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
           </div>
           
           <Separator />
@@ -34,7 +38,7 @@ export default function Settings() {
                 Ativar o tema escuro para o painel de controle.
               </p>
             </div>
-            <Switch />
+            <Switch checked={darkTheme} onCheckedChange={setDarkTheme} />
           </div>
         </CardContent>
       </Card>

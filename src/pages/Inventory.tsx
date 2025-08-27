@@ -19,6 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { FilterPopover } from "@/components/shared/filter-popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,9 +29,16 @@ export default function Inventory() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-
+  
   const { inventoryItems, isLoading, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
+  
+  const [filters, setFilters] = useState<string[]>([]);
+  const categories = ["PERIFÉRICOS", "TONERS", "CABOS", "PAPEL", "LIMPEZA", "ESCRITÓRIO"];
 
+  const handleFilterChange = (category: string, checked: boolean) => {
+    setFilters(prev => checked ? [...prev, category] : prev.filter(c => c !== category));
+  };
+  
   // Check for low stock items on load
   useEffect(() => {
     const lowStockItems = inventoryItems.filter(item => item.quantity <= item.minimum);
@@ -40,9 +50,10 @@ export default function Inventory() {
   }, [inventoryItems]);
 
   const filteredItems = inventoryItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+    (item.location || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (filters.length === 0 || filters.includes(item.category))
   );
 
   const getStockStatus = (quantity: number, minimum: number) => {
@@ -112,10 +123,20 @@ export default function Inventory() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
+            <FilterPopover filterLabel="Filtros">
+              <div className="flex flex-col space-y-2">
+                {categories.map(category => (
+                  <div key={category} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`filter-${category}`} 
+                      checked={filters.includes(category)} 
+                      onCheckedChange={(checked) => handleFilterChange(category, checked as boolean)} 
+                    />
+                    <Label htmlFor={`filter-${category}`}>{category}</Label>
+                  </div>
+                ))}
+              </div>
+            </FilterPopover>
           </div>
         </CardContent>
       </Card>
