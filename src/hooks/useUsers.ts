@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+// Local type definitions to avoid Supabase types issues
+export type UserProfile = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+};
 
-// Tipos para a tabela 'users'
-export type UserProfile = Tables<'users'>;
-export type NewUser = TablesInsert<'users'>;
-export type UpdatedUser = TablesUpdate<'users'>;
+export type NewUser = Omit<UserProfile, 'id' | 'created_at'>;
+export type UpdatedUser = Partial<Omit<UserProfile, 'id' | 'created_at'>>;
 
 export function useUsers() {
   const [users, setUsers] = useState<UserProfile[]>([]);
