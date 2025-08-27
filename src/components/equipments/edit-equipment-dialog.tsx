@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -10,49 +12,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Equipment, UpdatedEquipment, useEquipments } from "@/hooks/useEquipments";
+import { Equipment, UpdatedEquipment } from "@/hooks/useEquipments";
 
 interface EditEquipmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  equipment: Equipment | null;
+  equipment: Equipment;
   onSubmit: (id: number, updates: UpdatedEquipment) => void;
+  sectors: string[];
+  responsibles: string[];
 }
 
-export function EditEquipmentDialog({ open, onOpenChange, equipment, onSubmit }: EditEquipmentDialogProps) {
-  const { sectors, responsibles } = useEquipments();
-  const [formData, setFormData] = useState<UpdatedEquipment>({
-    name: "",
-    model: "",
-    sector: "",
-    responsible: "",
-    maintenance_interval: 30
+export function EditEquipmentDialog({ 
+  open, 
+  onOpenChange, 
+  equipment, 
+  onSubmit,
+  sectors,
+  responsibles 
+}: EditEquipmentDialogProps) {
+  const [formData, setFormData] = useState({
+    name: equipment.name,
+    model: equipment.model || "",
+    responsible: equipment.responsible,
+    sector: equipment.sector,
+    maintenance_interval: equipment.maintenance_interval.toString(),
   });
-
-  useEffect(() => {
-    if (equipment) {
-      setFormData({
-        name: equipment.name,
-        model: equipment.model,
-        sector: equipment.sector,
-        responsible: equipment.responsible,
-        maintenance_interval: equipment.maintenance_interval
-      });
-    }
-  }, [equipment]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!equipment) return;
-    
-    onSubmit(equipment.id, formData);
+    onSubmit(equipment.id, {
+      name: formData.name,
+      model: formData.model || null,
+      responsible: formData.responsible,
+      sector: formData.sector,
+      maintenance_interval: parseInt(formData.maintenance_interval),
+    });
     onOpenChange(false);
   };
 
@@ -62,81 +57,72 @@ export function EditEquipmentDialog({ open, onOpenChange, equipment, onSubmit }:
         <DialogHeader>
           <DialogTitle>Editar Equipamento</DialogTitle>
           <DialogDescription>
-            Atualize os dados do equipamento selecionado.
+            Edite as informações do equipamento.
           </DialogDescription>
         </DialogHeader>
-        
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome do Equipamento</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nome</Label>
             <Input
               id="name"
-              value={formData.name || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Ex: Impressora HP LaserJet"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
-          
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="model">Modelo</Label>
             <Input
               id="model"
-              value={formData.model || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-              placeholder="Ex: M404dn"
-              required
+              value={formData.model}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="sector">Setor</Label>
-            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, sector: value }))} value={formData.sector || ""}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o setor" />
-              </SelectTrigger>
-              <SelectContent>
-                {sectors.map((sector) => (
-                  <SelectItem key={sector} value={sector}>{sector}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="responsible">Responsável</Label>
-            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, responsible: value }))} value={formData.responsible || ""}>
+            <Select value={formData.responsible} onValueChange={(value) => setFormData({ ...formData, responsible: value })}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o responsável" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {responsibles.map((responsible) => (
-                  <SelectItem key={responsible} value={responsible}>{responsible}</SelectItem>
+                  <SelectItem key={responsible} value={responsible}>
+                    {responsible}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="interval">Intervalo de Manutenção (dias)</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="sector">Setor</Label>
+            <Select value={formData.sector} onValueChange={(value) => setFormData({ ...formData, sector: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sectors.map((sector) => (
+                  <SelectItem key={sector} value={sector}>
+                    {sector}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="maintenance_interval">Intervalo de Manutenção (dias)</Label>
             <Input
-              id="interval"
+              id="maintenance_interval"
               type="number"
-              value={formData.maintenance_interval || ""}
-              onChange={(e) => setFormData(prev => ({ ...prev, maintenance_interval: parseInt(e.target.value) }))}
-              placeholder="30"
-              min="1"
+              value={formData.maintenance_interval}
+              onChange={(e) => setFormData({ ...formData, maintenance_interval: e.target.value })}
               required
             />
           </div>
-          
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-gradient-primary">
-              Salvar Alterações
-            </Button>
+            <Button type="submit">Atualizar Equipamento</Button>
           </DialogFooter>
         </form>
       </DialogContent>

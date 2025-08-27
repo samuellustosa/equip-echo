@@ -1,96 +1,53 @@
+
 import { useState } from "react";
+import { Plus, Edit, Trash2, Wrench, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Wrench, History, Edit, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useEquipments, Equipment, NewEquipment } from "@/hooks/useEquipments";
 import { AddEquipmentDialog } from "@/components/equipments/add-equipment-dialog";
-import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 import { EditEquipmentDialog } from "@/components/equipments/edit-equipment-dialog";
+import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
-import { MaintenanceHistoryDialog } from "@/components/equipments/maintenance-history-dialog";
-import { cn } from "@/lib/utils";
-import { FilterPopover } from "@/components/shared/filter-popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { useEquipments, Equipment } from "@/hooks/useEquipments";
 
 export default function Equipments() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const { equipments, isLoading, addEquipment, updateEquipment, deleteEquipment, registerMaintenance, sectors, responsibles } = useEquipments();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  
-  const { equipments, addEquipment, registerMaintenance, updateEquipment, deleteEquipment, isLoading } = useEquipments();
-  
-  const [filters, setFilters] = useState<string[]>([]);
 
-  const handleFilterChange = (status: string, checked: boolean) => {
-    setFilters(prev => checked ? [...prev, status] : prev.filter(s => s !== status));
-  };
-  
-  const filteredEquipments = equipments.filter(equipment =>
-    (equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equipment.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equipment.responsible.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (filters.length === 0 || filters.includes(equipment.status))
-  );
-
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "Em Dia":
-        return <StatusBadge status="success">{status}</StatusBadge>;
+        return "bg-green-100 text-green-800 hover:bg-green-100";
       case "Com Aviso":
-        return <StatusBadge status="warning">{status}</StatusBadge>;
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
       case "Atrasado":
-        return <StatusBadge status="danger">{status}</StatusBadge>;
+        return "bg-red-100 text-red-800 hover:bg-red-100";
       default:
-        return <StatusBadge status="neutral">{status}</StatusBadge>;
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
-  const getDaysUntilMaintenance = (nextMaintenance: string | null) => {
-    if (!nextMaintenance) return { text: "N/A", className: "text-muted-foreground" };
-    
-    // Converte ambas as datas para o fuso horário local no início do dia para uma comparação precisa
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const nextDate = new Date(nextMaintenance + 'T00:00:00');
-    
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return { text: `Atrasado em ${Math.abs(diffDays)}d`, className: "text-destructive font-medium" };
-    } else if (diffDays <= 7) {
-      // Alteração aqui: usando a cor warning em vez de orange-500
-      return { text: `${diffDays} dias`, className: "text-warning font-medium" };
-    } else {
-      return { text: `${diffDays} dias`, className: "text-success font-medium" };
-    }
+  const handleEdit = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setShowEditDialog(true);
   };
 
-  const handleDelete = () => {
+  const handleMaintenance = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setShowMaintenanceDialog(true);
+  };
+
+  const handleDelete = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
     if (selectedEquipment) {
       deleteEquipment(selectedEquipment.id);
       setSelectedEquipment(null);
@@ -98,180 +55,123 @@ export default function Equipments() {
     }
   };
 
-  const formatMaintenanceDate = (date: string | null) => {
-    if (!date) return '-';
-    // Adiciona a hora T00:00:00 para garantir que a data seja interpretada como fuso horário local
-    const formattedDate = new Date(date + 'T00:00:00');
-    return formattedDate.toLocaleDateString('pt-BR');
-  };
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-64">Carregando...</div>;
+  }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Equipamentos</h1>
-          <p className="text-muted-foreground">Gerenciar equipamentos e suas manutenções</p>
+          <h1 className="text-3xl font-bold tracking-tight">Equipamentos</h1>
+          <p className="text-muted-foreground">
+            Gerencie seus equipamentos e manutenções
+          </p>
         </div>
-        <Button 
-          className="bg-gradient-primary hover:shadow-elegant transition-all"
-          onClick={() => setShowAddDialog(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Equipamento
+        <Button onClick={() => setShowAddDialog(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar Equipamento
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card className="shadow-card">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar equipamentos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Equipamentos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{equipments.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Com Aviso</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {equipments.filter(eq => eq.status === "Com Aviso").length}
             </div>
-            <FilterPopover filterLabel="Filtros">
-              <div className="flex flex-col space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="filter-emdia" 
-                    checked={filters.includes("Em Dia")} 
-                    onCheckedChange={(checked) => handleFilterChange("Em Dia", checked as boolean)} 
-                  />
-                  <Label htmlFor="filter-emdia">Em Dia</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="filter-comaviso" 
-                    checked={filters.includes("Com Aviso")} 
-                    onCheckedChange={(checked) => handleFilterChange("Com Aviso", checked as boolean)} 
-                  />
-                  <Label htmlFor="filter-comaviso">Com Aviso</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="filter-atrasado" 
-                    checked={filters.includes("Atrasado")} 
-                    onCheckedChange={(checked) => handleFilterChange("Atrasado", checked as boolean)} 
-                  />
-                  <Label htmlFor="filter-atrasado">Atrasado</Label>
-                </div>
-              </div>
-            </FilterPopover>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Atrasados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {equipments.filter(eq => eq.status === "Atrasado").length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Equipment Table */}
-      <Card className="shadow-card">
+      <Card>
         <CardHeader>
           <CardTitle>Lista de Equipamentos</CardTitle>
           <CardDescription>
-            {filteredEquipments.length} equipamento(s) encontrado(s)
+            Visualize e gerencie todos os equipamentos cadastrados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Equipamento</TableHead>
-                  <TableHead>Setor</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Última Manutenção</TableHead>
-                  <TableHead>Próxima Manutenção</TableHead>
-                  <TableHead>Dias Restantes</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Modelo</TableHead>
+                <TableHead>Responsável</TableHead>
+                <TableHead>Setor</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Próxima Manutenção</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {equipments.map((equipment) => (
+                <TableRow key={equipment.id}>
+                  <TableCell className="font-medium">{equipment.name}</TableCell>
+                  <TableCell>{equipment.model || "-"}</TableCell>
+                  <TableCell>{equipment.responsible}</TableCell>
+                  <TableCell>{equipment.sector}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(equipment.status)}>
+                      {equipment.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {equipment.next_maintenance 
+                      ? new Date(equipment.next_maintenance).toLocaleDateString('pt-BR')
+                      : "-"
+                    }
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(equipment)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMaintenance(equipment)}
+                      >
+                        <Wrench className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(equipment)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center">Carregando...</TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEquipments.map((equipment, index) => {
-                    const { text, className: daysClassName } = getDaysUntilMaintenance(equipment.next_maintenance);
-                    const rowClassName = index % 2 === 1 ? 'bg-muted/50' : '';
-                    return (
-                      <TableRow key={equipment.id} className={cn(rowClassName, "hover:bg-muted/50")}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{equipment.name}</p>
-                            <p className="text-sm text-muted-foreground">{equipment.model}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{equipment.sector}</Badge>
-                        </TableCell>
-                        <TableCell>{equipment.responsible}</TableCell>
-                        <TableCell>{getStatusBadge(equipment.status)}</TableCell>
-                        <TableCell className="text-sm">{formatMaintenanceDate(equipment.last_maintenance)}</TableCell>
-                        <TableCell className="text-sm">{formatMaintenanceDate(equipment.next_maintenance)}</TableCell>
-                        <TableCell>
-                          <span className={daysClassName}>
-                            {text}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover border z-50">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEquipment(equipment);
-                                  setShowMaintenanceDialog(true);
-                                }}
-                              >
-                                <Wrench className="h-4 w-4 mr-2" />
-                                Registrar Manutenção
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEquipment(equipment);
-                                  setShowHistoryDialog(true);
-                                }}
-                              >
-                                <History className="h-4 w-4 mr-2" />
-                                Ver Histórico
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEquipment(equipment);
-                                  setShowEditDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedEquipment(equipment);
-                                  setShowDeleteDialog(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -279,35 +179,36 @@ export default function Equipments() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={addEquipment}
+        sectors={sectors}
+        responsibles={responsibles}
       />
 
-      <MaintenanceDialog
-        open={showMaintenanceDialog}
-        onOpenChange={setShowMaintenanceDialog}
-        equipment={selectedEquipment}
-        onSubmit={registerMaintenance}
-      />
-      
-      <EditEquipmentDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        equipment={selectedEquipment}
-        onSubmit={updateEquipment}
-      />
-      
+      {selectedEquipment && (
+        <>
+          <EditEquipmentDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            equipment={selectedEquipment}
+            onSubmit={updateEquipment}
+            sectors={sectors}
+            responsibles={responsibles}
+          />
+          <MaintenanceDialog
+            open={showMaintenanceDialog}
+            onOpenChange={setShowMaintenanceDialog}
+            equipment={selectedEquipment}
+            onSubmit={(maintenanceData) => registerMaintenance(selectedEquipment.id, maintenanceData)}
+            responsibles={responsibles}
+          />
+        </>
+      )}
+
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDelete}
-        title="Tem certeza que deseja excluir?"
-        description="Esta ação não pode ser desfeita. O equipamento e todos os registros de manutenção associados serão permanentemente excluídos."
-      />
-
-      <MaintenanceHistoryDialog
-        open={showHistoryDialog}
-        onOpenChange={setShowHistoryDialog}
-        equipmentId={selectedEquipment?.id || null}
-        equipmentName={selectedEquipment?.name || null}
+        onConfirm={confirmDelete}
+        title="Excluir Equipamento"
+        description="Tem certeza que deseja excluir este equipamento? Esta ação não pode ser desfeita."
       />
     </div>
   );

@@ -1,243 +1,187 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Plus, Search, Filter, MoreHorizontal, Package, AlertTriangle, Edit, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { useInventory, InventoryItem, NewInventoryItem } from "@/hooks/useInventory";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AddInventoryDialog } from "@/components/inventory/add-inventory-dialog";
 import { EditInventoryDialog } from "@/components/inventory/edit-inventory-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { FilterPopover } from "@/components/shared/filter-popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { useInventory, InventoryItem } from "@/hooks/useInventory";
 
 export default function Inventory() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const { inventoryItems, isLoading, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  
-  const { inventoryItems, isLoading, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
-  
-  const [filters, setFilters] = useState<string[]>([]);
-  const categories = ["PERIFÉRICOS", "TONERS", "CABOS", "PAPEL", "LIMPEZA", "ESCRITÓRIO"];
 
-  const handleFilterChange = (category: string, checked: boolean) => {
-    setFilters(prev => checked ? [...prev, category] : prev.filter(c => c !== category));
-  };
-  
-  // Check for low stock items on load
-  useEffect(() => {
-    const lowStockItems = inventoryItems.filter(item => item.quantity <= item.minimum);
-    if (lowStockItems.length > 0) {
-      toast.warning(`${lowStockItems.length} item(ns) com estoque baixo!`, {
-        description: lowStockItems.map(item => item.name).join(", ")
-      });
+  const lowStockItems = inventoryItems.filter(item => item.quantity <= item.minimum);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Disponível":
+        return "bg-green-100 text-green-800 hover:bg-green-100";
+      case "Em Uso":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
+      case "Indisponível":
+        return "bg-red-100 text-red-800 hover:bg-red-100";
+      default:
+        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
-  }, [inventoryItems]);
-
-  const filteredItems = inventoryItems.filter(item =>
-    (item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.location || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (filters.length === 0 || filters.includes(item.category))
-  );
-
-  const getStockStatus = (quantity: number, minimum: number) => {
-    if (quantity === 0) return { status: "danger" as const, label: "Sem Estoque" };
-    if (quantity <= minimum) return { status: "warning" as const, label: "Estoque Baixo" };
-    return { status: "success" as const, label: "Normal" };
   };
 
-  const lowStockCount = inventoryItems.filter(item => item.quantity <= item.minimum).length;
+  const handleEdit = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowEditDialog(true);
+  };
 
-  const handleDelete = () => {
+  const handleDelete = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
     if (selectedItem) {
       deleteInventoryItem(selectedItem.id);
       setSelectedItem(null);
       setShowDeleteDialog(false);
     }
   };
-  
-  const formatMovementDate = (date: string | null) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-64">Carregando...</div>;
+  }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Estoque</h1>
-          <p className="text-muted-foreground">Gerenciar itens e controle de estoque</p>
+          <h1 className="text-3xl font-bold tracking-tight">Estoque</h1>
+          <p className="text-muted-foreground">
+            Controle seu inventário e materiais
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Package className="h-4 w-4 mr-2" />
-            Categorias
-          </Button>
-          <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-primary hover:shadow-elegant transition-all">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Item
-          </Button>
-        </div>
+        <Button onClick={() => setShowAddDialog(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar Item
+        </Button>
       </div>
 
-      {/* Alert for low stock */}
-      {lowStockCount > 0 && (
-        <Card className="border-warning bg-warning-light shadow-card">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              <p className="text-sm font-medium">
-                <span className="text-warning">{lowStockCount} item(s)</span> com estoque baixo ou zerado
-              </p>
+      {lowStockItems.length > 0 && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>{lowStockItems.length} item(s)</strong> com estoque baixo: {' '}
+            {lowStockItems.map(item => item.name).join(', ')}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Itens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inventoryItems.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Disponíveis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {inventoryItems.filter(item => item.status === "Disponível").length}
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Filters */}
-      <Card className="shadow-card">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar itens do estoque..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Em Uso</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {inventoryItems.filter(item => item.status === "Em Uso").length}
             </div>
-            <FilterPopover filterLabel="Filtros">
-              <div className="flex flex-col space-y-2">
-                {categories.map(category => (
-                  <div key={category} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`filter-${category}`} 
-                      checked={filters.includes(category)} 
-                      onCheckedChange={(checked) => handleFilterChange(category, checked as boolean)} 
-                    />
-                    <Label htmlFor={`filter-${category}`}>{category}</Label>
-                  </div>
-                ))}
-              </div>
-            </FilterPopover>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estoque Baixo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {lowStockItems.length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Inventory Table */}
-      <Card className="shadow-card">
+      <Card>
         <CardHeader>
-          <CardTitle>Itens do Estoque</CardTitle>
+          <CardTitle>Lista de Itens</CardTitle>
           <CardDescription>
-            {filteredItems.length} item(s) encontrado(s)
+            Visualize e gerencie todos os itens do estoque
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground mt-4">Carregando...</p>
-            </div>
-          ) : filteredItems.length === 0 && !searchTerm ? (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nenhum item cadastrado</p>
-              <p className="text-sm text-muted-foreground">
-                Adicione o primeiro item ao seu inventário
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Localização</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Última Movimentação</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredItems.map((item, index) => {
-                    const stockStatus = getStockStatus(item.quantity, item.minimum);
-                    const rowClassName = index % 2 === 1 ? 'bg-muted/50' : '';
-                    return (
-                      <TableRow key={item.id} className={cn(rowClassName, "hover:bg-muted/50")}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Min: {item.minimum} {item.unit}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.category}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{item.quantity} {item.unit}</span>
-                            <StatusBadge status={stockStatus.status}>
-                              {stockStatus.label}
-                            </StatusBadge>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.location || '-'}</TableCell>
-                        <TableCell><StatusBadge status="neutral">{item.status}</StatusBadge></TableCell>
-                        <TableCell className="text-sm">{formatMovementDate(item.last_movement)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setShowEditDialog(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Quantidade</TableHead>
+                <TableHead>Mínimo</TableHead>
+                <TableHead>Unidade</TableHead>
+                <TableHead>Localização</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {inventoryItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell>{item.category}</TableCell>
+                  <TableCell>
+                    <span className={item.quantity <= item.minimum ? "text-red-600 font-semibold" : ""}>
+                      {item.quantity}
+                    </span>
+                  </TableCell>
+                  <TableCell>{item.minimum}</TableCell>
+                  <TableCell>{item.unit || "-"}</TableCell>
+                  <TableCell>{item.location || "-"}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(item.status)}>
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(item)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -246,20 +190,22 @@ export default function Inventory() {
         onOpenChange={setShowAddDialog}
         onSubmit={addInventoryItem}
       />
-      
-      <EditInventoryDialog
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-        item={selectedItem}
-        onSubmit={updateInventoryItem}
-      />
+
+      {selectedItem && (
+        <EditInventoryDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          item={selectedItem}
+          onSubmit={updateInventoryItem}
+        />
+      )}
 
       <DeleteConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDelete}
-        title="Tem certeza que deseja excluir?"
-        description="Esta ação não pode ser desfeita. O item será permanentemente removido do estoque."
+        onConfirm={confirmDelete}
+        title="Excluir Item"
+        description="Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita."
       />
     </div>
   );
