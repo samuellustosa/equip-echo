@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, AlertTriangle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,9 +9,12 @@ import { AddInventoryDialog } from "@/components/inventory/add-inventory-dialog"
 import { EditInventoryDialog } from "@/components/inventory/edit-inventory-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { useInventory, InventoryItem } from "@/hooks/useInventory";
+import { useSearch } from "@/hooks/useSearch"; // Novo import
 
 export default function Inventory() {
   const { inventoryItems, isLoading, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useInventory();
+  const { searchTerm } = useSearch(); // Usar o termo de busca global
+
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -50,6 +52,13 @@ export default function Inventory() {
       setShowDeleteDialog(false);
     }
   };
+
+  // Lógica de filtragem
+  const filteredItems = inventoryItems.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.location && item.location.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Carregando...</div>;
@@ -143,7 +152,7 @@ export default function Inventory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventoryItems.map((item) => (
+              {filteredItems.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.category}</TableCell>

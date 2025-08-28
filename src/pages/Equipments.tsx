@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus, Edit, Trash2, Wrench, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,14 +8,23 @@ import { AddEquipmentDialog } from "@/components/equipments/add-equipment-dialog
 import { EditEquipmentDialog } from "@/components/equipments/edit-equipment-dialog";
 import { MaintenanceDialog } from "@/components/equipments/maintenance-dialog";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
+import { MaintenanceHistoryDialog } from "@/components/equipments/maintenance-history-dialog";
 import { useEquipments, Equipment } from "@/hooks/useEquipments";
+import { useSearch } from "@/hooks/useSearch";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Equipments() {
   const { equipments, isLoading, addEquipment, updateEquipment, deleteEquipment, registerMaintenance, sectors, responsibles } = useEquipments();
+  const { searchTerm } = useSearch();
+  const { user } = useAuth();
+  const userRole = user?.role;
+  const isAllowedToManage = userRole === "Admin" || userRole === "Manager";
+
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
 
   const getStatusColor = (status: string) => {
@@ -42,6 +50,11 @@ export default function Equipments() {
     setShowMaintenanceDialog(true);
   };
 
+  const handleShowHistory = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setShowHistoryDialog(true);
+  };
+
   const handleDelete = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
     setShowDeleteDialog(true);
@@ -54,6 +67,13 @@ export default function Equipments() {
       setShowDeleteDialog(false);
     }
   };
+
+  const filteredEquipments = equipments.filter(equipment =>
+    equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equipment.model && equipment.model.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    equipment.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    equipment.responsible.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Carregando...</div>;
@@ -68,10 +88,12 @@ export default function Equipments() {
             Gerencie seus equipamentos e manutenções
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Adicionar Equipamento
-        </Button>
+        {isAllowedToManage && (
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Adicionar Equipamento
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -126,7 +148,7 @@ export default function Equipments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {equipments.map((equipment) => (
+              {filteredEquipments.map((equipment) => (
                 <TableRow key={equipment.id}>
                   <TableCell className="font-medium">{equipment.name}</TableCell>
                   <TableCell>{equipment.model || "-"}</TableCell>
@@ -148,24 +170,35 @@ export default function Equipments() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEdit(equipment)}
+                        onClick={() => handleShowHistory(equipment)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <History className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleMaintenance(equipment)}
-                      >
-                        <Wrench className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(equipment)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {isAllowedToManage && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(equipment)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMaintenance(equipment)}
+                          >
+                            <Wrench className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(equipment)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -175,41 +208,56 @@ export default function Equipments() {
         </CardContent>
       </Card>
 
-      <AddEquipmentDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSubmit={addEquipment}
-        sectors={sectors}
-        responsibles={responsibles}
-      />
-
-      {selectedEquipment && (
+      {isAllowedToManage && (
         <>
-          <EditEquipmentDialog
-            open={showEditDialog}
-            onOpenChange={setShowEditDialog}
-            equipment={selectedEquipment}
-            onSubmit={updateEquipment}
+          <AddEquipmentDialog
+            open={showAddDialog}
+            onOpenChange={setShowAddDialog}
+            onSubmit={addEquipment}
             sectors={sectors}
             responsibles={responsibles}
           />
-          <MaintenanceDialog
-            open={showMaintenanceDialog}
-            onOpenChange={setShowMaintenanceDialog}
-            equipment={selectedEquipment}
-            onSubmit={(maintenanceData) => registerMaintenance(selectedEquipment.id, maintenanceData)}
-            responsibles={responsibles}
-          />
+
+          {selectedEquipment && (
+            <>
+              <EditEquipmentDialog
+                open={showEditDialog}
+                onOpenChange={setShowEditDialog}
+                equipment={selectedEquipment}
+                onSubmit={updateEquipment}
+                sectors={sectors}
+                responsibles={responsibles}
+              />
+              <MaintenanceDialog
+                open={showMaintenanceDialog}
+                onOpenChange={setShowMaintenanceDialog}
+                equipment={selectedEquipment}
+                onSubmit={(maintenanceData) => registerMaintenance(selectedEquipment.id, maintenanceData)}
+                responsibles={responsibles}
+              />
+            </>
+          )}
         </>
       )}
 
-      <DeleteConfirmationDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={confirmDelete}
-        title="Excluir Equipamento"
-        description="Tem certeza que deseja excluir este equipamento? Esta ação não pode ser desfeita."
-      />
+      {selectedEquipment && (
+        <MaintenanceHistoryDialog
+          open={showHistoryDialog}
+          onOpenChange={setShowHistoryDialog}
+          equipmentId={selectedEquipment.id}
+          equipmentName={selectedEquipment.name}
+        />
+      )}
+
+      {selectedEquipment && (
+        <DeleteConfirmationDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={confirmDelete}
+          title="Excluir Equipamento"
+          description="Tem certeza que deseja excluir este equipamento? Esta ação não pode ser desfeita."
+        />
+      )}
     </div>
   );
 }

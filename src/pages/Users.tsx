@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Plus } from "lucide-react";
+import { User, Plus, Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useUsers, NewUser } from "@/hooks/useUsers";
+import { useUsers, NewUser, UserProfile, UpdatedUser } from "@/hooks/useUsers";
 import {
   Table,
   TableBody,
@@ -14,17 +14,47 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
+import { EditUserDialog } from "@/components/users/edit-user-dialog";
 
 export default function Users() {
-  const { users, isLoading, addUser } = useUsers();
+  const { users, isLoading, addUser, updateUser, deleteUser } = useUsers();
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
-  const [formData, setFormData] = useState<NewUser>({ name: "", email: "", role: "Técnico" });
+  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
+  const [showDeleteUserDialog, setShowDeleteUserDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   const handleAddUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addUser(formData);
-    setFormData({ name: "", email: "", role: "Técnico" });
+    if (selectedUser) {
+      addUser(selectedUser as NewUser);
+    }
+    // setFormData({ name: "", email: "", role: "Técnico" }); // Ajustado para usar o estado correto
     setShowAddUserDialog(false);
+  };
+
+  const handleEdit = (user: UserProfile) => {
+    setSelectedUser(user);
+    setShowEditUserDialog(true);
+  };
+
+  const handleDelete = (user: UserProfile) => {
+    setSelectedUser(user);
+    setShowDeleteUserDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedUser) {
+      deleteUser(String(selectedUser.id));
+      setSelectedUser(null);
+      setShowDeleteUserDialog(false);
+    }
+  };
+
+  const handleUpdateUser = (id: string, updates: UpdatedUser) => {
+    updateUser(id, updates);
+    setSelectedUser(null);
+    setShowEditUserDialog(false);
   };
 
   return (
@@ -65,6 +95,7 @@ export default function Users() {
                     <TableHead className="text-left font-medium p-2">Nome</TableHead>
                     <TableHead className="text-left font-medium p-2">Email</TableHead>
                     <TableHead className="text-left font-medium p-2">Função</TableHead>
+                    <TableHead className="text-right font-medium p-2">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -73,6 +104,24 @@ export default function Users() {
                       <TableCell className="p-2 font-medium">{user.name}</TableCell>
                       <TableCell className="p-2 text-muted-foreground">{user.email}</TableCell>
                       <TableCell className="p-2">{user.role}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(user)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -91,11 +140,11 @@ export default function Users() {
           <form onSubmit={handleAddUserSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" placeholder="Nome Completo" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
+              <Input id="name" placeholder="Nome Completo" value={""} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="email@exemplo.com" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
+              <Input id="email" type="email" placeholder="email@exemplo.com" value={""} required />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAddUserDialog(false)}>
@@ -108,6 +157,23 @@ export default function Users() {
           </form>
         </DialogContent>
       </Dialog>
+      
+      {selectedUser && (
+        <EditUserDialog 
+          open={showEditUserDialog}
+          onOpenChange={setShowEditUserDialog}
+          user={selectedUser}
+          onSubmit={handleUpdateUser}
+        />
+      )}
+
+      <DeleteConfirmationDialog
+        open={showDeleteUserDialog}
+        onOpenChange={setShowDeleteUserDialog}
+        onConfirm={confirmDelete}
+        title="Excluir Usuário"
+        description="Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 }

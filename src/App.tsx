@@ -13,18 +13,26 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import React from "react";
 
 const queryClient = new QueryClient();
 
 // Componente para rotas protegidas
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { session, isLoading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) => {
+  const { session, user, isLoading } = useAuth();
+
   if (isLoading) {
     return <div>Carregando...</div>;
   }
+
   if (!session) {
     return <Navigate to="/auth" />;
   }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    return <div className="p-4 text-center">Você não tem permissão para acessar esta página.</div>;
+  }
+
   return <MainLayout>{children}</MainLayout>;
 };
 
@@ -52,7 +60,7 @@ const AppRoutes = () => {
         <Route
           path="/inventory"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["Admin", "Manager"]}>
               <Inventory />
             </ProtectedRoute>
           }
@@ -60,7 +68,7 @@ const AppRoutes = () => {
         <Route
           path="/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["Admin"]}>
               <Users />
             </ProtectedRoute>
           }
@@ -68,12 +76,11 @@ const AppRoutes = () => {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["Admin", "Manager", "User"]}>
               <Settings />
             </ProtectedRoute>
           }
         />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

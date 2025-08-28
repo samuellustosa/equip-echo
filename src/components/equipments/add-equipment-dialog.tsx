@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { NewEquipment, useEquipments } from "@/hooks/useEquipments";
+import { NewEquipment } from "@/hooks/useEquipments";
+import { addDays, format } from "date-fns"; // Novo import
 
 interface AddEquipmentDialogProps {
   open: boolean;
@@ -34,15 +35,14 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit, sectors, resp
     sector: "",
     responsible: "",
     maintenance_interval: 30,
-    last_maintenance: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0]
+    last_maintenance: new Date().toISOString().split('T')[0] // Data atual sem horas/minutos
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const lastMaintenanceDate = new Date(formData.last_maintenance);
-    const nextMaintenance = new Date(lastMaintenanceDate);
-    nextMaintenance.setDate(lastMaintenanceDate.getDate() + formData.maintenance_interval);
+    const nextMaintenance = addDays(lastMaintenanceDate, formData.maintenance_interval);
 
     const newEquipment: NewEquipment = {
       name: formData.name,
@@ -52,7 +52,7 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit, sectors, resp
       maintenance_interval: formData.maintenance_interval,
       status: "Em Dia",
       last_maintenance: formData.last_maintenance,
-      next_maintenance: nextMaintenance.toISOString().split('T')[0]
+      next_maintenance: format(nextMaintenance, 'yyyy-MM-dd')
     };
 
     onSubmit(newEquipment);
@@ -62,7 +62,7 @@ export function AddEquipmentDialog({ open, onOpenChange, onSubmit, sectors, resp
       sector: "",
       responsible: "",
       maintenance_interval: 30,
-      last_maintenance: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0]
+      last_maintenance: new Date().toISOString().split('T')[0]
     });
     onOpenChange(false);
   };

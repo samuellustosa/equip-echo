@@ -1,3 +1,5 @@
+// Path: src/components/equipments/maintenance-history-dialog.tsx
+
 import { useEffect, useState } from "react";
 import {
   Dialog,

@@ -17,7 +17,10 @@ export type Equipment = {
   created_at: string;
 };
 
-export type NewEquipment = Omit<Equipment, 'id' | 'created_at'>;
+export type NewEquipment = Omit<Equipment, 'id' | 'created_at' | 'status'> & {
+  status: "Em Dia";
+};
+
 export type UpdatedEquipment = Partial<Omit<Equipment, 'id' | 'created_at'>>;
 
 export type MaintenanceRecord = {
@@ -116,11 +119,7 @@ export function useEquipments() {
   }, []);
 
   const addEquipment = async (equipment: NewEquipment) => {
-    const newEquipmentData = {
-      ...equipment,
-      status: "Em Dia",
-    };
-    const { error } = await supabase.from("equipments").insert(newEquipmentData);
+    const { error } = await supabase.from("equipments").insert(equipment);
     if (error) {
       toast.error("Erro ao adicionar equipamento.");
       console.error(error);
