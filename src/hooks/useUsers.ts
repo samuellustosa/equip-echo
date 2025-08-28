@@ -50,7 +50,7 @@ export function useUsers() {
   };
 
   const updateUser = async (id: string, updates: UpdatedUser) => {
-    const { error } = await supabase.from("users").update(updates).eq("id", id);
+    const { error } = await supabase.from("users").update(updates).eq("id", parseInt(id));
     if (error) {
       toast.error("Erro ao atualizar usuário.");
       console.error(error);
@@ -61,7 +61,7 @@ export function useUsers() {
   };
 
   const deleteUser = async (id: string) => {
-    const { error } = await supabase.from("users").delete().eq("id", id);
+    const { error } = await supabase.from("users").delete().eq("id", parseInt(id));
     if (error) {
       toast.error("Erro ao remover usuário.");
       console.error(error);

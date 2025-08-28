@@ -4,10 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
+import { useTheme } from "@/components/theme-provider";
 
 export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(false);
-  const [darkTheme, setDarkTheme] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const isDarkMode = theme === "dark";
 
   return (
     <div className="space-y-6">
@@ -38,7 +40,10 @@ export default function Settings() {
                 Ativar o tema escuro para o painel de controle.
               </p>
             </div>
-            <Switch checked={darkTheme} onCheckedChange={setDarkTheme} />
+            <Switch 
+              checked={isDarkMode} 
+              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} 
+            />
           </div>
         </CardContent>
       </Card>
