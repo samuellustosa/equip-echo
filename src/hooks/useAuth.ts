@@ -1,23 +1,62 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
+import { UserProfile } from "./useUsers";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchUserProfile = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .single();
+      
+      if (error) {
+        console.error("Erro ao buscar perfil do usuário:", error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Erro ao buscar perfil do usuário:", error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setUser(session?.user ?? null);
+      setAuthUser(session?.user ?? null);
+      
+      if (session?.user?.email) {
+        const profile = await fetchUserProfile(session.user.email);
+        setUser(profile);
+      }
+      
       setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        setAuthUser(session?.user ?? null);
+        
+        if (session?.user?.email) {
+          const profile = await fetchUserProfile(session.user.email);
+          setUser(profile);
+        } else {
+          setUser(null);
+        }
+        
         setIsLoading(false);
       }
     );
@@ -52,5 +91,5 @@ export function useAuth() {
     }
   };
 
-  return { session, user, isLoading, login, logout, signup };
+  return { session, authUser, user, isLoading, login, logout, signup };
 }

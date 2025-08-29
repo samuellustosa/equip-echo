@@ -1,11 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Plus, Edit, Trash2 } from "lucide-react";
+import { User, Plus, Edit, Trash2, Shield, ShieldCheck, Crown } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUsers, NewUser, UserProfile, UpdatedUser } from "@/hooks/useUsers";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Table,
   TableBody,
@@ -14,23 +12,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { DeleteConfirmationDialog } from "@/components/shared/delete-confirmation-dialog";
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
+import { AddUserDialog } from "@/components/users/add-user-dialog";
 
 export default function Users() {
   const { users, isLoading, addUser, updateUser, deleteUser } = useUsers();
+  const { user: currentUser } = useAuth();
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
   const [showDeleteUserDialog, setShowDeleteUserDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
-  const handleAddUserSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedUser) {
-      addUser(selectedUser as NewUser);
-    }
-    // setFormData({ name: "", email: "", role: "Técnico" }); // Ajustado para usar o estado correto
-    setShowAddUserDialog(false);
+  const handleAddUser = (newUser: NewUser) => {
+    addUser(newUser);
   };
 
   const handleEdit = (user: UserProfile) => {
@@ -56,6 +52,51 @@ export default function Users() {
     setSelectedUser(null);
     setShowEditUserDialog(false);
   };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "Admin":
+        return <Crown className="h-4 w-4 text-yellow-500" />;
+      case "Manager":
+        return <ShieldCheck className="h-4 w-4 text-blue-500" />;
+      default:
+        return <Shield className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getRoleBadge = (role: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      Admin: "destructive",
+      Manager: "secondary", 
+      User: "outline"
+    };
+    
+    const labels: Record<string, string> = {
+      Admin: "Administrador",
+      Manager: "Gerente",
+      User: "Usuário"
+    };
+    
+    return (
+      <Badge variant={variants[role] || "outline"} className="flex items-center gap-1">
+        {getRoleIcon(role)}
+        {labels[role] || role}
+      </Badge>
+    );
+  };
+
+  // Verificar se o usuário atual é Admin
+  if (currentUser?.role !== "Admin") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
+          <p className="text-muted-foreground">Você não tem permissão para gerenciar usuários.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -94,7 +135,7 @@ export default function Users() {
                   <TableRow>
                     <TableHead className="text-left font-medium p-2">Nome</TableHead>
                     <TableHead className="text-left font-medium p-2">Email</TableHead>
-                    <TableHead className="text-left font-medium p-2">Função</TableHead>
+                    <TableHead className="text-left font-medium p-2">Permissão</TableHead>
                     <TableHead className="text-right font-medium p-2">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -103,7 +144,7 @@ export default function Users() {
                     <TableRow key={user.id} className="border-b hover:bg-muted/50">
                       <TableCell className="p-2 font-medium">{user.name}</TableCell>
                       <TableCell className="p-2 text-muted-foreground">{user.email}</TableCell>
-                      <TableCell className="p-2">{user.role}</TableCell>
+                      <TableCell className="p-2">{getRoleBadge(user.role)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -113,10 +154,11 @@ export default function Users() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
+                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(user)}
+                            disabled={user.email === currentUser?.email}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -131,32 +173,11 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-            <DialogDescription>Preencha os detalhes do novo usuário.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAddUserSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input id="name" placeholder="Nome Completo" value={""} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="email@exemplo.com" value={""} required />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAddUserDialog(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" className="bg-gradient-primary">
-                Adicionar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AddUserDialog
+        open={showAddUserDialog}
+        onOpenChange={setShowAddUserDialog}
+        onSubmit={handleAddUser}
+      />
       
       {selectedUser && (
         <EditUserDialog 

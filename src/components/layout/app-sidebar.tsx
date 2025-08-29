@@ -80,10 +80,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {items
                 .filter(item => {
-                  if (item.title === "Usuários" && userRole !== "Admin") {
-                    return false;
-                  }
-                  return true;
+                  if (!userRole) return false;
+                  return item.roles.includes(userRole);
                 })
                 .map((item) => (
                 <SidebarMenuItem key={item.title}>

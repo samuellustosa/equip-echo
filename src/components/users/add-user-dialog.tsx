@@ -17,37 +17,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserProfile, UpdatedUser } from "@/hooks/useUsers";
+import { NewUser } from "@/hooks/useUsers";
 
-interface EditUserDialogProps {
+interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: UserProfile;
-  onSubmit: (id: string, updates: UpdatedUser) => void;
+  onSubmit: (user: NewUser) => void;
 }
 
 const roles = ["Admin", "Manager", "User"];
 
-export function EditUserDialog({ open, onOpenChange, user, onSubmit }: EditUserDialogProps) {
+export function AddUserDialog({ open, onOpenChange, onSubmit }: AddUserDialogProps) {
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
-    role: user.role,
+    name: "",
+    email: "",
+    role: "User",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(String(user.id), formData);
+    onSubmit(formData as NewUser);
+    setFormData({ name: "", email: "", role: "User" });
     onOpenChange(false);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    onOpenChange(newOpen);
+    if (!newOpen) {
+      setFormData({ name: "", email: "", role: "User" });
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Editar Usuário</DialogTitle>
+          <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>
-            Edite as informações do usuário, incluindo a sua permissão.
+            Preencha as informações do novo usuário e defina suas permissões.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,6 +64,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSubmit }: EditUserD
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Nome completo do usuário"
               required
             />
           </div>
@@ -67,6 +75,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSubmit }: EditUserD
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="email@exemplo.com"
               required
             />
           </div>
@@ -88,10 +97,12 @@ export function EditUserDialog({ open, onOpenChange, user, onSubmit }: EditUserD
             </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar Alterações</Button>
+            <Button type="submit" className="bg-gradient-primary">
+              Adicionar Usuário
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
