@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -29,8 +28,13 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
     return <Navigate to="/auth" />;
   }
 
+  // Verifica se a rota requer permissões específicas e se o usuário tem a permissão necessária
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <div className="p-4 text-center">Você não tem permissão para acessar esta página.</div>;
+    return (
+      <MainLayout>
+        <div className="p-4 text-center">Você não tem permissão para acessar esta página.</div>
+      </MainLayout>
+    );
   }
 
   return <MainLayout>{children}</MainLayout>;
@@ -76,7 +80,7 @@ const AppRoutes = () => {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute allowedRoles={["Admin", "Manager", "User"]}>
+            <ProtectedRoute>
               <Settings />
             </ProtectedRoute>
           }
@@ -91,7 +95,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <TooltipProvider>
-        <Toaster />
         <Sonner />
         <AppRoutes />
       </TooltipProvider>

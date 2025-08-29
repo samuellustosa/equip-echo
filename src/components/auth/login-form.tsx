@@ -5,13 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom"; // Importe o hook useNavigate
+import { useNavigate } from "react-router-dom";
 
 export function LoginForm() {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate(); // Inicialize o hook de navegação
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +21,8 @@ export function LoginForm() {
 
     try {
       await login(email, password);
-      toast.success("Login bem-sucedido!");
-      navigate("/"); // Redireciona o utilizador para a página principal após o login
+      // A navegação agora é gerenciada pelo componente Auth.tsx
+      // O toast de sucesso de login será disparado quando o perfil for carregado
     } catch (error) {
       toast.error("Erro no login. Verifique suas credenciais.");
       console.error(error);

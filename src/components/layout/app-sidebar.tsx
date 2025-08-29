@@ -13,7 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils"; // Importação correta da função cn
+import { cn } from "@/lib/utils";
 
 const items = [
   { title: "Dashboard", url: "/", icon: BarChart3, roles: ["Admin", "Manager", "User"] },
