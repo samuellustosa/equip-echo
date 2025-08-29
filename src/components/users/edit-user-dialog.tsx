@@ -112,7 +112,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSubmit }: EditUserD
               </Label>
               <Select 
                 value={formData.role} 
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value: "Admin" | "Manager" | "User") => setFormData({ ...formData, role: value })}
                 disabled={isLoading}
               >
                 <SelectTrigger className="h-11">

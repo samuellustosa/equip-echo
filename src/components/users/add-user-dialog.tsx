@@ -123,7 +123,7 @@ export function AddUserDialog({ open, onOpenChange, onSubmit }: AddUserDialogPro
               </Label>
               <Select 
                 value={formData.role} 
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value: "Admin" | "Manager" | "User") => setFormData({ ...formData, role: value })}
                 disabled={isLoading}
               >
                 <SelectTrigger className="h-11">

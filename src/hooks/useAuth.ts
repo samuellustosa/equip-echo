@@ -12,10 +12,15 @@ export function useAuth() {
 
   // Função interna para buscar o perfil e lidar com a condição de corrida
   const fetchUserProfileAndSetState = async (email: string) => {
-    const maxRetries = 5;
-    const retryDelay = 500; // 500ms
+    const maxRetries = 3; // Reduzido de 5 para 3
+    const retryDelay = 1000; // Aumentado para 1 segundo
+    
+    console.log("Iniciando busca do perfil para:", email);
+    
     for (let i = 0; i < maxRetries; i++) {
       try {
+        console.log(`Tentativa ${i + 1} de buscar perfil`);
+        
         const { data, error } = await supabase
           .from("users")
           .select("*")
@@ -28,10 +33,12 @@ export function useAuth() {
             await new Promise(res => setTimeout(res, retryDelay));
             continue;
           }
+          console.error("Falha ao buscar perfil após várias tentativas");
           return null;
         }
 
         if (data && data.length > 0) {
+          console.log("Perfil encontrado:", data[0]);
           return data[0] as UserProfile;
         }
 
@@ -40,11 +47,12 @@ export function useAuth() {
           await new Promise(res => setTimeout(res, retryDelay));
         }
       } catch (error) {
-        console.error("Erro ao buscar perfil do usuário:", error);
+        console.error("Erro inesperado ao buscar perfil do usuário:", error);
         return null;
       }
     }
-    console.error("Falha ao buscar perfil do usuário após várias tentativas.");
+    
+    console.error("Perfil não encontrado após várias tentativas. Usuário pode não ter perfil criado.");
     return null;
   };
 
@@ -96,13 +104,29 @@ export function useAuth() {
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
+    try {
+      setIsLoading(true);
+      console.log("Iniciando login para:", email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      console.log("Resposta do login:", { data, error });
+      
+      if (error) {
+        console.error("Erro no login:", error);
+        throw error;
+      }
+      
+      console.log("Login realizado com sucesso");
+      // A tela de carregamento será desativada pelo onAuthStateChange listener
+    } catch (error) {
       setIsLoading(false);
+      console.error("Erro inesperado no login:", error);
       throw error;
     }
-    // A tela de carregamento será desativada pelo onAuthStateChange listener
   };
 
   const logout = async () => {
