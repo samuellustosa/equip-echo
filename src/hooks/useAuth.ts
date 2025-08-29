@@ -10,50 +10,25 @@ export function useAuth() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Função interna para buscar o perfil e lidar com a condição de corrida
+  // Função otimizada para buscar o perfil
   const fetchUserProfileAndSetState = async (email: string) => {
-    const maxRetries = 3; // Reduzido de 5 para 3
-    const retryDelay = 1000; // Aumentado para 1 segundo
-    
-    console.log("Iniciando busca do perfil para:", email);
-    
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        console.log(`Tentativa ${i + 1} de buscar perfil`);
-        
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("email", email);
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
 
-        if (error) {
-          console.error("Erro ao buscar perfil do usuário:", error);
-          if (i < maxRetries - 1) {
-            console.log(`Tentando novamente em ${retryDelay}ms...`);
-            await new Promise(res => setTimeout(res, retryDelay));
-            continue;
-          }
-          console.error("Falha ao buscar perfil após várias tentativas");
-          return null;
-        }
-
-        if (data && data.length > 0) {
-          console.log("Perfil encontrado:", data[0]);
-          return data[0] as UserProfile;
-        }
-
-        if (i < maxRetries - 1) {
-          console.log(`Perfil não encontrado, tentando novamente em ${retryDelay}ms...`);
-          await new Promise(res => setTimeout(res, retryDelay));
-        }
-      } catch (error) {
-        console.error("Erro inesperado ao buscar perfil do usuário:", error);
+      if (error) {
+        console.error("Erro ao buscar perfil:", error);
         return null;
       }
+
+      return data as UserProfile | null;
+    } catch (error) {
+      console.error("Erro inesperado ao buscar perfil:", error);
+      return null;
     }
-    
-    console.error("Perfil não encontrado após várias tentativas. Usuário pode não ter perfil criado.");
-    return null;
   };
 
   useEffect(() => {
