@@ -85,7 +85,7 @@ export function useAuth() {
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
-        password 
+        password
       });
       
       console.log("Resposta do login:", { data, error });
